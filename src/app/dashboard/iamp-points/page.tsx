@@ -22,19 +22,11 @@ import {
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Checkbox } from '@/components/ui/checkbox';
-
-interface ApplicableTypes {
-    theory: boolean;
-    practical: boolean;
-    sla: boolean;
-}
 
 interface IAMPPoint {
     _id: string;
     name: string;
     description?: string;
-    applicableTypes?: ApplicableTypes;
     isActive: boolean;
     createdAt: string;
 }
@@ -46,11 +38,6 @@ export default function IAMPPointsPage() {
     const [formData, setFormData] = useState({
         name: '',
         description: '',
-        applicableTypes: {
-            theory: true,
-            practical: true,
-            sla: true,
-        },
     });
 
     useEffect(() => {
@@ -71,13 +58,6 @@ export default function IAMPPointsPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
-        // Validate at least one type is selected
-        if (!formData.applicableTypes.theory && !formData.applicableTypes.practical && !formData.applicableTypes.sla) {
-            alert('Please select at least one applicable type');
-            return;
-        }
-
         try {
             const res = await fetch('/api/iamp-points', {
                 method: 'POST',
@@ -86,11 +66,7 @@ export default function IAMPPointsPage() {
             });
             if (res.ok) {
                 setIsOpen(false);
-                setFormData({
-                    name: '',
-                    description: '',
-                    applicableTypes: { theory: true, practical: true, sla: true },
-                });
+                setFormData({ name: '', description: '' });
                 fetchPoints();
             }
         } catch (error) {
@@ -119,15 +95,6 @@ export default function IAMPPointsPage() {
         } catch (error) {
             console.error('Error deleting IAMP point:', error);
         }
-    };
-
-    const getTypesBadges = (types?: ApplicableTypes) => {
-        if (!types) return ['TH', 'PR', 'SLA']; // Default all
-        const badges = [];
-        if (types.theory) badges.push('TH');
-        if (types.practical) badges.push('PR');
-        if (types.sla) badges.push('SLA');
-        return badges;
     };
 
     if (isLoading) {
@@ -170,68 +137,6 @@ export default function IAMPPointsPage() {
                                     placeholder="Brief description of this IAMP point"
                                 />
                             </div>
-                            <div className="space-y-2">
-                                <Label>Applicable For</Label>
-                                <div className="flex flex-wrap gap-4 p-3 border rounded-md">
-                                    <div className="flex items-center gap-2">
-                                        <Checkbox
-                                            id="type-theory"
-                                            checked={formData.applicableTypes.theory}
-                                            onCheckedChange={(checked: boolean) =>
-                                                setFormData({
-                                                    ...formData,
-                                                    applicableTypes: {
-                                                        ...formData.applicableTypes,
-                                                        theory: checked,
-                                                    },
-                                                })
-                                            }
-                                        />
-                                        <Label htmlFor="type-theory" className="cursor-pointer font-normal">
-                                            Theory (TH)
-                                        </Label>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Checkbox
-                                            id="type-practical"
-                                            checked={formData.applicableTypes.practical}
-                                            onCheckedChange={(checked: boolean) =>
-                                                setFormData({
-                                                    ...formData,
-                                                    applicableTypes: {
-                                                        ...formData.applicableTypes,
-                                                        practical: checked,
-                                                    },
-                                                })
-                                            }
-                                        />
-                                        <Label htmlFor="type-practical" className="cursor-pointer font-normal">
-                                            Practical (PR)
-                                        </Label>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <Checkbox
-                                            id="type-sla"
-                                            checked={formData.applicableTypes.sla}
-                                            onCheckedChange={(checked: boolean) =>
-                                                setFormData({
-                                                    ...formData,
-                                                    applicableTypes: {
-                                                        ...formData.applicableTypes,
-                                                        sla: checked,
-                                                    },
-                                                })
-                                            }
-                                        />
-                                        <Label htmlFor="type-sla" className="cursor-pointer font-normal">
-                                            SLA
-                                        </Label>
-                                    </div>
-                                </div>
-                                <p className="text-xs text-muted-foreground">
-                                    Select which teaching types this IAMP point applies to
-                                </p>
-                            </div>
                             <Button type="submit" className="w-full">
                                 Create IAMP Point
                             </Button>
@@ -246,7 +151,6 @@ export default function IAMPPointsPage() {
                         <TableRow>
                             <TableHead>Name</TableHead>
                             <TableHead>Description</TableHead>
-                            <TableHead>Applies To</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead>Active</TableHead>
                             <TableHead>Actions</TableHead>
@@ -255,7 +159,7 @@ export default function IAMPPointsPage() {
                     <TableBody>
                         {points.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={6} className="text-center text-muted-foreground">
+                                <TableCell colSpan={5} className="text-center text-muted-foreground">
                                     No IAMP points found
                                 </TableCell>
                             </TableRow>
@@ -265,15 +169,6 @@ export default function IAMPPointsPage() {
                                     <TableCell className="font-medium">{point.name}</TableCell>
                                     <TableCell className="max-w-xs truncate">
                                         {point.description || '-'}
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex gap-1">
-                                            {getTypesBadges(point.applicableTypes).map((type) => (
-                                                <Badge key={type} variant="outline" className="text-xs">
-                                                    {type}
-                                                </Badge>
-                                            ))}
-                                        </div>
                                     </TableCell>
                                     <TableCell>
                                         <Badge variant={point.isActive ? 'default' : 'secondary'}>

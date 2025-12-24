@@ -14,12 +14,6 @@ import { auth } from '@/lib/auth';
 Teacher;
 Subject;
 
-interface ApplicableTypes {
-    theory: boolean;
-    practical: boolean;
-    sla: boolean;
-}
-
 export async function GET(request: NextRequest) {
     try {
         const session = await auth();
@@ -42,11 +36,9 @@ export async function GET(request: NextRequest) {
         let canSelectDepartment = false;
 
         if (role === 'super_admin' || role === 'principal') {
-            // Admin and Principal can see all departments
             canSelectDepartment = true;
             departmentFilter = departmentId || undefined;
         } else if (role === 'hod' || role === 'iamp_coordinator') {
-            // HOD and Coordinator can only see their department
             if (!user?.department) {
                 return NextResponse.json({ error: 'No department assigned' }, { status: 400 });
             }
@@ -55,7 +47,7 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
 
-        // Get departments for filter dropdown (admin and principal only)
+        // Get departments for filter dropdown
         let departments: IDepartment[] = [];
         if (canSelectDepartment) {
             departments = await Department.find({ isActive: true }).sort({ name: 1 });
@@ -64,23 +56,20 @@ export async function GET(request: NextRequest) {
         // Get semesters for filter dropdown
         const semesters: ISemester[] = await Semester.find({ isActive: true }).sort({ startDate: -1 });
 
-        // If no department selected for roles that can select, return just filter options
+        // If no department or semester selected, return filter options
         if (canSelectDepartment && !departmentFilter) {
             return NextResponse.json({ departments, semesters, report: null }, { status: 200 });
         }
-
-        // If no semester selected, return filter options
         if (!semesterId) {
             return NextResponse.json({ departments, semesters, report: null }, { status: 200 });
         }
 
-        // Get department info
+        // Get department and semester info
         const department = await Department.findById(departmentFilter);
         if (!department) {
             return NextResponse.json({ error: 'Department not found' }, { status: 404 });
         }
 
-        // Get semester info
         const semester = await Semester.findById(semesterId);
         if (!semester) {
             return NextResponse.json({ error: 'Semester not found' }, { status: 404 });
@@ -104,10 +93,9 @@ export async function GET(request: NextRequest) {
             semester: semesterId,
         });
 
-        // Build the report matrix
-        // For each mapping (teacher-subject-class-type), create a column
-        const columns: Array<{
-            mappingId: string;
+        // Group mappings by teacher-subject-class (ignore type)
+        const columnMap = new Map<string, {
+            key: string;
             teacherId: string;
             teacherName: string;
             teacherShortName: string;
@@ -116,66 +104,46 @@ export async function GET(request: NextRequest) {
             subjectCode?: string;
             classId: string;
             className?: string;
-            teachingType: string;
-        }> = [];
+        }>();
 
-        // Create columns from mappings - each mapping is a column
         teacherMappings.forEach((mapping) => {
             const teacher = mapping.teacher as unknown as { _id: { toString(): string }; name: string; shortName: string };
             const subject = mapping.subject as unknown as { _id: { toString(): string }; name: string; code?: string };
             const classInfo = mapping.class as unknown as { _id: { toString(): string }; displayName: string };
 
-            columns.push({
-                mappingId: mapping._id.toString(),
-                teacherId: teacher._id.toString(),
-                teacherName: teacher.name,
-                teacherShortName: teacher.shortName,
-                subjectId: subject._id.toString(),
-                subjectName: subject.name,
-                subjectCode: subject.code,
-                classId: classInfo?._id?.toString() || '',
-                className: classInfo?.displayName,
-                teachingType: mapping.teachingType,
-            });
+            const key = `${teacher._id.toString()}-${subject._id.toString()}-${classInfo?._id?.toString() || ''}`;
+
+            if (!columnMap.has(key)) {
+                columnMap.set(key, {
+                    key,
+                    teacherId: teacher._id.toString(),
+                    teacherName: teacher.name,
+                    teacherShortName: teacher.shortName,
+                    subjectId: subject._id.toString(),
+                    subjectName: subject.name,
+                    subjectCode: subject.code,
+                    classId: classInfo?._id?.toString() || '',
+                    className: classInfo?.displayName,
+                });
+            }
         });
 
-        // Build supervision lookup map - include class for class-specific data
+        const columns = Array.from(columnMap.values());
+
+        // Build supervision lookup map
         const supervisionMap = new Map<string, string>();
         supervisions.forEach((sup) => {
             const key = `${sup.teacher.toString()}-${sup.subject.toString()}-${sup.class?.toString() || ''}-${sup.iampPoint.toString()}`;
             supervisionMap.set(key, sup.status);
         });
 
-        // Helper to check if IAMP point applies to a teaching type
-        const isPointApplicable = (point: { applicableTypes?: ApplicableTypes }, teachingType: string): boolean => {
-            const types = point.applicableTypes || { theory: true, practical: true, sla: true };
-            switch (teachingType) {
-                case 'theory':
-                    return types.theory;
-                case 'practical':
-                    return types.practical;
-                case 'sla':
-                    return types.sla;
-                default:
-                    return true;
-            }
-        };
-
         // Build rows (each IAMP point is a row)
         const rows = iampPoints.map((point, index) => {
             const values: Record<string, string> = {};
 
             columns.forEach((col) => {
-                // Use mappingId as the unique column key
-                const colKey = col.mappingId;
-
-                // Check if this IAMP point applies to this column's teaching type
-                if (!isPointApplicable(point, col.teachingType)) {
-                    values[colKey] = 'na'; // Not applicable for this type
-                } else {
-                    const supervisionKey = `${col.teacherId}-${col.subjectId}-${col.classId}-${point._id.toString()}`;
-                    values[colKey] = supervisionMap.get(supervisionKey) || '';
-                }
+                const supervisionKey = `${col.teacherId}-${col.subjectId}-${col.classId}-${point._id.toString()}`;
+                values[col.key] = supervisionMap.get(supervisionKey) || '';
             });
 
             return {
@@ -186,8 +154,7 @@ export async function GET(request: NextRequest) {
             };
         });
 
-        // Build supervisor info for each column (who marked the supervisions)
-        // Get unique supervisors per teacher-subject-class combination
+        // Build supervisor info for each column
         const supervisorMap = new Map<string, Set<string>>();
         for (const sup of supervisions) {
             const colKey = `${sup.teacher.toString()}-${sup.subject.toString()}-${sup.class?.toString() || ''}`;
@@ -204,20 +171,19 @@ export async function GET(request: NextRequest) {
         supervisorMap.forEach((ids) => ids.forEach((id) => allSupervisorIds.add(id)));
         const supervisorUsers = await User.find({ _id: { $in: Array.from(allSupervisorIds) } }).select('name');
         const supervisorNameMap = new Map<string, string>();
-        supervisorUsers.forEach((user) => {
-            supervisorNameMap.set(user._id.toString(), user.name);
+        supervisorUsers.forEach((u) => {
+            supervisorNameMap.set(u._id.toString(), u.name);
         });
 
         // Build supervisedBy for each column
         const supervisedBy: Record<string, string> = {};
         columns.forEach((col) => {
-            const colKey = `${col.teacherId}-${col.subjectId}-${col.classId}`;
-            const supervisorIds = supervisorMap.get(colKey);
+            const supervisorIds = supervisorMap.get(col.key);
             if (supervisorIds && supervisorIds.size > 0) {
                 const names = Array.from(supervisorIds).map((id) => supervisorNameMap.get(id) || '').filter(Boolean);
-                supervisedBy[col.mappingId] = names.join(', ');
+                supervisedBy[col.key] = names.join(', ');
             } else {
-                supervisedBy[col.mappingId] = '';
+                supervisedBy[col.key] = '';
             }
         });
 
@@ -243,11 +209,7 @@ export async function GET(request: NextRequest) {
                         academicYear: semester.academicYear,
                         type: semester.type,
                     },
-                    coordinator: coordinator
-                        ? {
-                            name: coordinator.name,
-                        }
-                        : null,
+                    coordinator: coordinator ? { name: coordinator.name } : null,
                     columns,
                     rows,
                     supervisedBy,

@@ -28,7 +28,7 @@ interface Semester {
 }
 
 interface Column {
-    mappingId: string;
+    key: string;
     teacherId: string;
     teacherName: string;
     teacherShortName: string;
@@ -37,7 +37,6 @@ interface Column {
     subjectCode?: string;
     classId: string;
     className?: string;
-    teachingType: string;
 }
 
 interface Row {
@@ -128,7 +127,7 @@ export default function ReportsPage() {
     };
 
     const getColumnKey = (col: Column) => {
-        return col.mappingId;
+        return col.key;
     };
 
     const handlePrint = () => {
@@ -197,21 +196,13 @@ export default function ReportsPage() {
         return labels[status] || '-';
     };
 
-    const getTypeLabel = (type: string) => {
-        const labels: Record<string, string> = {
-            theory: 'TH',
-            practical: 'PR',
-            sla: 'SLA',
-        };
-        return labels[type] || type;
-    };
-
     const isColumnCompleted = (col: Column) => {
         if (!report) return false;
         const colKey = getColumnKey(col);
-        // Consider 'na' (not applicable) as complete for that point
+        // Ignore N/A entries, check if all other entries are "yes"
         return report.rows.every((row) => {
             const value = row.values[colKey];
+            // N/A is ignored, empty is not completed, "yes" is completed, "no" is not
             return value === 'yes' || value === 'na';
         });
     };

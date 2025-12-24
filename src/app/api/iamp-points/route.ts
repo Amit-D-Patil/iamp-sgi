@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
 
         await connectDB();
         const body = await request.json();
-        const { name, description, applicableTypes } = body;
+        const { name, description } = body;
 
         if (!name) {
             return NextResponse.json({ error: 'Name is required' }, { status: 400 });
@@ -42,11 +42,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'IAMP Point already exists' }, { status: 409 });
         }
 
-        const point = await IAMPPoint.create({
-            name,
-            description,
-            applicableTypes: applicableTypes || { theory: true, practical: true, sla: true },
-        });
+        const point = await IAMPPoint.create({ name, description });
 
         return NextResponse.json({ point }, { status: 201 });
     } catch (error) {

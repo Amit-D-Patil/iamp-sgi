@@ -13,25 +13,17 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 
-interface Mapping {
-    _id: string;
+interface MappingGroup {
+    key: string;
     teacher: { _id: string; name: string; shortName: string };
     subject: { _id: string; name: string; code?: string };
     class: { _id: string; displayName: string };
-    teachingType: 'theory' | 'practical' | 'sla';
-}
-
-interface ApplicableTypes {
-    theory: boolean;
-    practical: boolean;
-    sla: boolean;
 }
 
 interface IAMPPoint {
     _id: string;
     name: string;
     description?: string;
-    applicableTypes?: ApplicableTypes;
     isActive: boolean;
 }
 
@@ -47,8 +39,16 @@ interface Supervision {
     status: 'yes' | 'no' | 'na';
 }
 
+interface RawMapping {
+    _id: string;
+    teacher: { _id: string; name: string; shortName: string };
+    subject: { _id: string; name: string; code?: string };
+    class: { _id: string; displayName: string };
+    teachingType: string;
+}
+
 export default function SupervisionPage() {
-    const [mappings, setMappings] = useState<Mapping[]>([]);
+    const [mappingGroups, setMappingGroups] = useState<MappingGroup[]>([]);
     const [allIampPoints, setAllIampPoints] = useState<IAMPPoint[]>([]);
     const [semesters, setSemesters] = useState<Semester[]>([]);
     const [supervisions, setSupervisions] = useState<Supervision[]>([]);
@@ -58,24 +58,7 @@ export default function SupervisionPage() {
     const [selectedSemester, setSelectedSemester] = useState<string>('');
     const [selectedMapping, setSelectedMapping] = useState<string>('');
 
-    const selectedMappingData = mappings.find((m) => m._id === selectedMapping);
-
-    // Filter IAMP points based on selected mapping's teaching type
-    const filteredIampPoints = allIampPoints.filter((point) => {
-        if (!selectedMappingData) return true;
-        const types = point.applicableTypes || { theory: true, practical: true, sla: true };
-
-        switch (selectedMappingData.teachingType) {
-            case 'theory':
-                return types.theory;
-            case 'practical':
-                return types.practical;
-            case 'sla':
-                return types.sla;
-            default:
-                return true;
-        }
-    });
+    const selectedMappingData = mappingGroups.find((m) => m.key === selectedMapping);
 
     useEffect(() => {
         fetchInitialData();
@@ -100,7 +83,23 @@ export default function SupervisionPage() {
             const pointsData = await pointsRes.json();
             const semestersData = await semestersRes.json();
 
-            setMappings(mappingsData.mappings || []);
+            // Group mappings by teacher-subject-class (ignore type)
+            const rawMappings: RawMapping[] = mappingsData.mappings || [];
+            const groupMap = new Map<string, MappingGroup>();
+
+            rawMappings.forEach((m) => {
+                const key = `${m.teacher._id}-${m.subject._id}-${m.class._id}`;
+                if (!groupMap.has(key)) {
+                    groupMap.set(key, {
+                        key,
+                        teacher: m.teacher,
+                        subject: m.subject,
+                        class: m.class,
+                    });
+                }
+            });
+
+            setMappingGroups(Array.from(groupMap.values()));
             setAllIampPoints(
                 pointsData.points?.filter((p: IAMPPoint) => p.isActive) || []
             );
@@ -180,15 +179,6 @@ export default function SupervisionPage() {
         );
     };
 
-    const getTypeLabel = (type: string) => {
-        const labels: Record<string, string> = {
-            theory: 'TH',
-            practical: 'PR',
-            sla: 'SLA',
-        };
-        return labels[type] || type;
-    };
-
     if (isLoading) {
         return <div>Loading...</div>;
     }
@@ -209,7 +199,7 @@ export default function SupervisionPage() {
             )}
 
             {/* No mappings warning */}
-            {mappings.length === 0 && (
+            {mappingGroups.length === 0 && (
                 <Card className="mb-6 border-yellow-500">
                     <CardContent className="py-4">
                         <p className="text-center text-yellow-600">
@@ -222,7 +212,7 @@ export default function SupervisionPage() {
             {/* Selection */}
             <Card className="mb-6">
                 <CardHeader>
-                    <CardTitle className="text-lg">Select Semester & Teacher-Subject Mapping</CardTitle>
+                    <CardTitle className="text-lg">Select Semester & Teacher-Subject-Class</CardTitle>
                 </CardHeader>
                 <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -256,9 +246,9 @@ export default function SupervisionPage() {
                                     <SelectValue placeholder="Select a mapping" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {mappings.map((mapping) => (
-                                        <SelectItem key={mapping._id} value={mapping._id}>
-                                            {mapping.teacher.name} - {mapping.subject.name} - {mapping.class.displayName} ({getTypeLabel(mapping.teachingType)})
+                                    {mappingGroups.map((mapping) => (
+                                        <SelectItem key={mapping.key} value={mapping.key}>
+                                            {mapping.teacher.name} - {mapping.subject.name} - {mapping.class.displayName}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -272,11 +262,7 @@ export default function SupervisionPage() {
                                 <Badge variant="outline">Teacher: {selectedMappingData.teacher.name}</Badge>
                                 <Badge variant="outline">Subject: {selectedMappingData.subject.name}</Badge>
                                 <Badge variant="outline">Class: {selectedMappingData.class.displayName}</Badge>
-                                <Badge>{getTypeLabel(selectedMappingData.teachingType)}</Badge>
                             </div>
-                            <p className="text-xs text-muted-foreground mt-2">
-                                Showing only IAMP points applicable for {getTypeLabel(selectedMappingData.teachingType)}
-                            </p>
                         </div>
                     )}
                 </CardContent>
@@ -288,19 +274,16 @@ export default function SupervisionPage() {
                     <CardHeader>
                         <CardTitle className="text-lg">
                             IAMP Points
-                            <span className="text-sm font-normal text-muted-foreground ml-2">
-                                ({filteredIampPoints.length} applicable)
-                            </span>
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        {filteredIampPoints.length === 0 ? (
+                        {allIampPoints.length === 0 ? (
                             <p className="text-muted-foreground text-center py-4">
-                                No IAMP points found for this type
+                                No active IAMP points found
                             </p>
                         ) : (
                             <div className="space-y-3">
-                                {filteredIampPoints.map((point) => {
+                                {allIampPoints.map((point) => {
                                     const status = getStatus(point._id);
                                     const saving = isSaving === point._id;
 
@@ -355,7 +338,7 @@ export default function SupervisionPage() {
                 <Card>
                     <CardContent className="py-8">
                         <p className="text-muted-foreground text-center">
-                            Please select a semester and teacher-subject mapping to start supervision
+                            Please select a semester and teacher-subject-class to start supervision
                         </p>
                     </CardContent>
                 </Card>
