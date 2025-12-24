@@ -88,6 +88,9 @@ export default function SupervisionPage() {
             const groupMap = new Map<string, MappingGroup>();
 
             rawMappings.forEach((m) => {
+                // Skip mappings with missing data
+                if (!m.teacher?._id || !m.subject?._id || !m.class?._id) return;
+
                 const key = `${m.teacher._id}-${m.subject._id}-${m.class._id}`;
                 if (!groupMap.has(key)) {
                     groupMap.set(key, {

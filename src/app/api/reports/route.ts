@@ -107,11 +107,14 @@ export async function GET(request: NextRequest) {
         }>();
 
         teacherMappings.forEach((mapping) => {
-            const teacher = mapping.teacher as unknown as { _id: { toString(): string }; name: string; shortName: string };
-            const subject = mapping.subject as unknown as { _id: { toString(): string }; name: string; code?: string };
-            const classInfo = mapping.class as unknown as { _id: { toString(): string }; displayName: string };
+            const teacher = mapping.teacher as unknown as { _id: { toString(): string }; name: string; shortName: string } | null;
+            const subject = mapping.subject as unknown as { _id: { toString(): string }; name: string; code?: string } | null;
+            const classInfo = mapping.class as unknown as { _id: { toString(): string }; displayName: string } | null;
 
-            const key = `${teacher._id.toString()}-${subject._id.toString()}-${classInfo?._id?.toString() || ''}`;
+            // Skip mappings with missing data
+            if (!teacher?._id || !subject?._id || !classInfo?._id) return;
+
+            const key = `${teacher._id.toString()}-${subject._id.toString()}-${classInfo._id.toString()}`;
 
             if (!columnMap.has(key)) {
                 columnMap.set(key, {
@@ -122,8 +125,8 @@ export async function GET(request: NextRequest) {
                     subjectId: subject._id.toString(),
                     subjectName: subject.name,
                     subjectCode: subject.code,
-                    classId: classInfo?._id?.toString() || '',
-                    className: classInfo?.displayName,
+                    classId: classInfo._id.toString(),
+                    className: classInfo.displayName,
                 });
             }
         });
