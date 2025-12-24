@@ -4,6 +4,7 @@ import Supervision from '@/models/Supervision';
 import TeacherMapping from '@/models/TeacherMapping';
 import Teacher from '@/models/Teacher';
 import Subject from '@/models/Subject';
+import Class from '@/models/Class';
 import IAMPPoint from '@/models/IAMPPoint';
 import Department, { IDepartment } from '@/models/Department';
 import Semester, { ISemester } from '@/models/Semester';
@@ -13,6 +14,7 @@ import { auth } from '@/lib/auth';
 // Ensure models are registered
 Teacher;
 Subject;
+Class;
 
 export async function GET(request: NextRequest) {
     try {
