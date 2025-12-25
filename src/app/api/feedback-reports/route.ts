@@ -38,8 +38,8 @@ export async function GET(request: NextRequest) {
         const teacherId = searchParams.get('teacher');
         const sessionId = searchParams.get('session');
 
-        // Get all questions (for headers)
-        const questions = await Question.find({ isActive: true }).sort({ order: 1 });
+        // Get only abcd_grade questions (for headers)
+        const questions = await Question.find({ isActive: true, type: 'abcd_grade' }).sort({ order: 1 });
 
         // Get teachers (filter by department for non-super-admin)
         let teacherQuery: { _id?: string; department?: string } = {};
