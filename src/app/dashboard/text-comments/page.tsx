@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import {
@@ -48,7 +48,16 @@ const getMonthYear = () => {
     return new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 };
 
+// Wrapper component to handle Suspense for useSearchParams
 export default function TextCommentsPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <TextCommentsContent />
+        </Suspense>
+    );
+}
+
+function TextCommentsContent() {
     const searchParams = useSearchParams();
     const showBatchWise = searchParams.get('batch') === 'true';
 
