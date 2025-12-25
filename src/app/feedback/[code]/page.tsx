@@ -101,6 +101,7 @@ export default function FeedbackPage({ params }: { params: Promise<{ code: strin
 
     useEffect(() => {
         fetchFeedbackData();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [code]);
 
     const fetchFeedbackData = async () => {

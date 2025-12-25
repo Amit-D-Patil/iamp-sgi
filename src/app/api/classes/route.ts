@@ -52,7 +52,9 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { year, division } = body;
+        const { year } = body;
+        // Default division to 'A' if not provided
+        const division = body.division || 'A';
 
         if (!year) {
             return NextResponse.json({ error: 'Year is required' }, { status: 400 });
@@ -61,7 +63,7 @@ export async function POST(request: NextRequest) {
         // Check if class already exists
         const existingClass = await Class.findOne({
             year,
-            division: division || null,
+            division,
             department: user.department,
         });
 
@@ -73,13 +75,13 @@ export async function POST(request: NextRequest) {
         }
 
         // Generate displayName
-        const displayName = division ? `${year}-${division}` : year;
+        const displayName = `${year}-${division}`;
         const name = displayName;
 
         const newClass = await Class.create({
             name,
             year,
-            division: division || undefined,
+            division,
             displayName,
             department: user.department,
             createdBy: session.user.id,

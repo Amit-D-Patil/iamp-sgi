@@ -170,6 +170,7 @@ export async function POST(
             return response;
         });
 
+        // Type assertion needed because Mongoose handles ObjectId conversion
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const feedbackResponse = await FeedbackResponse.create({
             feedbackSession: feedbackSession._id,

@@ -28,7 +28,7 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 interface ClassItem {
     _id: string;
@@ -188,6 +188,11 @@ export default function FeedbackSessionsPage() {
                                 />
                                 <p className="text-xs text-muted-foreground">
                                     Maximum number of feedback responses allowed
+                                </p>
+                            </div>
+                            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                <p className="text-xs text-yellow-800">
+                                    <strong>Note:</strong> Make sure batches are created for the selected class before starting feedback. Without batches, students won&apos;t be able to submit feedback.
                                 </p>
                             </div>
                             <Button

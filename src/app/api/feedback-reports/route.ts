@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
         const questions = await Question.find({ isActive: true, type: 'abcd_grade' }).sort({ order: 1 });
 
         // Get teachers (filter by department for non-super-admin)
-        let teacherQuery: { _id?: string; department?: string } = {};
+        const teacherQuery: { _id?: string; department?: string } = {};
         if (teacherId) {
             teacherQuery._id = teacherId;
         }
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
         const teachers = await Teacher.find(teacherQuery).select('name shortName');
 
         // Get feedback sessions (filter by department)
-        let sessionQuery: { _id?: string; department?: string } = {};
+        const sessionQuery: { _id?: string; department?: string } = {};
         if (sessionId) {
             sessionQuery._id = sessionId;
         }
@@ -99,6 +99,18 @@ export async function GET(request: NextRequest) {
             const rows: typeof reports[0]['rows'] = [];
 
             for (const mapping of teacherMappings) {
+                // Find feedback sessions for this specific class
+                const classId = (mapping.class as unknown as { _id: { toString: () => string } })._id.toString();
+                const relevantSessions = feedbackSessions.filter(
+                    s => (s.class as unknown as { _id: { toString: () => string } })._id.toString() === classId
+                );
+                const relevantSessionIds = relevantSessions.map(s => s._id.toString());
+
+                // Only consider responses from feedback sessions for this class
+                const classResponses = feedbackResponses.filter(
+                    r => relevantSessionIds.includes(r.feedbackSession.toString())
+                );
+
                 // Find all responses for this teacher/class/type combination
                 const questionAverages: { questionId: string; average: number; count: number }[] = [];
                 let totalPoints = 0;
@@ -110,7 +122,7 @@ export async function GET(request: NextRequest) {
                     let sum = 0;
                     let count = 0;
 
-                    for (const response of feedbackResponses) {
+                    for (const response of classResponses) {
                         const questionResponse = response.responses.find(
                             (r: { question: { toString: () => string } }) => r.question.toString() === question._id.toString()
                         );

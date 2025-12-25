@@ -3,6 +3,7 @@ import { connectDB } from '@/lib/db';
 import FeedbackSession from '@/models/FeedbackSession';
 import FeedbackResponse from '@/models/FeedbackResponse';
 import Class from '@/models/Class';
+import Batch from '@/models/Batch';
 import User from '@/models/User';
 import { auth } from '@/lib/auth';
 import { nanoid } from 'nanoid';
@@ -77,6 +78,15 @@ export async function POST(request: NextRequest) {
         const classDoc = await Class.findOne({ _id: classId, department: user.department });
         if (!classDoc) {
             return NextResponse.json({ error: 'Class not found' }, { status: 404 });
+        }
+
+        // Check if batches exist for this class
+        const batchCount = await Batch.countDocuments({ class: classId, isActive: true });
+        if (batchCount === 0) {
+            return NextResponse.json(
+                { error: 'No batches found for this class. Please create batches first before starting feedback.' },
+                { status: 400 }
+            );
         }
 
         // Generate unique code

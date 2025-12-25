@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
     Select,
@@ -15,9 +16,11 @@ import { Badge } from '@/components/ui/badge';
 
 interface MappingGroup {
     key: string;
+    mappingId: string; // Store one mapping ID for remarks
     teacher: { _id: string; name: string; shortName: string };
     subject: { _id: string; name: string; code?: string };
     class: { _id: string; displayName: string };
+    remarks?: string;
 }
 
 interface IAMPPoint {
@@ -45,6 +48,7 @@ interface RawMapping {
     subject: { _id: string; name: string; code?: string };
     class: { _id: string; displayName: string };
     teachingType: string;
+    remarks?: string;
 }
 
 export default function SupervisionPage() {
@@ -58,6 +62,11 @@ export default function SupervisionPage() {
     const [selectedSemester, setSelectedSemester] = useState<string>('');
     const [selectedMapping, setSelectedMapping] = useState<string>('');
 
+    // Remarks state
+    const [remarks, setRemarks] = useState<string>('');
+    const [isSavingRemarks, setIsSavingRemarks] = useState(false);
+    const remarksTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
     const selectedMappingData = mappingGroups.find((m) => m.key === selectedMapping);
 
     useEffect(() => {
@@ -70,6 +79,7 @@ export default function SupervisionPage() {
         } else {
             setSupervisions([]);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedSemester, selectedMapping, selectedMappingData]);
 
     const fetchInitialData = async () => {
@@ -95,9 +105,11 @@ export default function SupervisionPage() {
                 if (!groupMap.has(key)) {
                     groupMap.set(key, {
                         key,
+                        mappingId: m._id, // Store the mapping ID
                         teacher: m.teacher,
                         subject: m.subject,
                         class: m.class,
+                        remarks: m.remarks || '',
                     });
                 }
             });
@@ -152,6 +164,65 @@ export default function SupervisionPage() {
             setIsSaving(null);
         }
     };
+
+    // Save remarks to the server
+    const saveRemarks = useCallback(async (mappingId: string, newRemarks: string, mappingKey: string) => {
+        setIsSavingRemarks(true);
+        try {
+            await fetch(`/api/teacher-mappings/${mappingId}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ remarks: newRemarks }),
+            });
+            // Update local state so remarks persist on reselection
+            setMappingGroups(prev => prev.map(m =>
+                m.key === mappingKey ? { ...m, remarks: newRemarks } : m
+            ));
+        } catch (error) {
+            console.error('Error saving remarks:', error);
+        } finally {
+            setIsSavingRemarks(false);
+        }
+    }, []);
+
+    // Handle remarks change with debounce
+    const handleRemarksChange = (newRemarks: string) => {
+        setRemarks(newRemarks);
+
+        // Clear existing timeout
+        if (remarksTimeoutRef.current) {
+            clearTimeout(remarksTimeoutRef.current);
+        }
+
+        // Set new timeout to save after 1 second of inactivity
+        if (selectedMappingData) {
+            remarksTimeoutRef.current = setTimeout(() => {
+                saveRemarks(selectedMappingData.mappingId, newRemarks, selectedMappingData.key);
+            }, 1000);
+        }
+    };
+
+    // Set remarks when mapping changes
+    useEffect(() => {
+        if (selectedMappingData) {
+            setRemarks(selectedMappingData.remarks || '');
+        } else {
+            setRemarks('');
+        }
+        // Clear timeout on mapping change
+        if (remarksTimeoutRef.current) {
+            clearTimeout(remarksTimeoutRef.current);
+        }
+    }, [selectedMappingData]);
+
+    // Cleanup timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (remarksTimeoutRef.current) {
+                clearTimeout(remarksTimeoutRef.current);
+            }
+        };
+    }, []);
 
     const getStatus = (iampPointId: string): 'yes' | 'no' | 'na' | null => {
         const supervision = supervisions.find(
@@ -261,10 +332,33 @@ export default function SupervisionPage() {
 
                     {selectedMappingData && (
                         <div className="mt-4 p-3 bg-muted rounded-lg">
-                            <div className="flex flex-wrap gap-2 text-sm">
+                            <div className="flex flex-wrap gap-2 text-sm mb-3">
                                 <Badge variant="outline">Teacher: {selectedMappingData.teacher.name}</Badge>
                                 <Badge variant="outline">Subject: {selectedMappingData.subject.name}</Badge>
                                 <Badge variant="outline">Class: {selectedMappingData.class.displayName}</Badge>
+                            </div>
+
+                            {/* Remarks textbox */}
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <Label htmlFor="remarks" className="text-sm font-medium">
+                                        Remarks (for your reference only)
+                                    </Label>
+                                    {isSavingRemarks && (
+                                        <span className="text-xs text-muted-foreground">Saving...</span>
+                                    )}
+                                </div>
+                                <Textarea
+                                    id="remarks"
+                                    placeholder="Add notes about this teacher-subject mapping..."
+                                    value={remarks}
+                                    onChange={(e) => handleRemarksChange(e.target.value)}
+                                    rows={2}
+                                    className="text-sm bg-background"
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                    Auto-saves after 1 second of inactivity
+                                </p>
                             </div>
                         </div>
                     )}

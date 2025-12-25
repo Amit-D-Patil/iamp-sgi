@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Get feedback sessions (filter by department for non-super-admin)
-        let sessionQuery: Record<string, unknown> = {};
+        const sessionQuery: Record<string, unknown> = {};
         if (sessionId) {
             sessionQuery._id = sessionId;
         }

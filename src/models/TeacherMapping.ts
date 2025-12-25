@@ -7,6 +7,7 @@ export interface ITeacherMapping extends Document {
     department: Types.ObjectId;
     teachingType: 'theory' | 'practical' | 'sla';
     batches?: Types.ObjectId[]; // For practical: which batches this teacher handles
+    remarks?: string; // Coordinator notes (not shown in reports)
     createdBy: Types.ObjectId;
     isActive: boolean;
     createdAt: Date;
@@ -44,6 +45,10 @@ const TeacherMappingSchema = new Schema<ITeacherMapping>(
             type: Schema.Types.ObjectId,
             ref: 'Batch',
         }],
+        remarks: {
+            type: String,
+            default: '',
+        },
         createdBy: {
             type: Schema.Types.ObjectId,
             ref: 'User',
