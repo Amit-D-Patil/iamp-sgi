@@ -54,11 +54,18 @@ interface ClassItem {
     division?: string;
 }
 
+interface BatchItem {
+    _id: string;
+    name: string;
+    class: string | { _id: string };
+}
+
 interface Mapping {
     _id: string;
     subject: { _id: string; name: string; code?: string };
     class: { _id: string; displayName: string };
     teachingType: 'theory' | 'practical' | 'sla';
+    batches?: { _id: string; name: string }[];
 }
 
 interface Teacher {
@@ -75,6 +82,7 @@ export default function TeachersPage() {
     const [teachers, setTeachers] = useState<Teacher[]>([]);
     const [subjects, setSubjects] = useState<Subject[]>([]);
     const [classes, setClasses] = useState<ClassItem[]>([]);
+    const [batches, setBatches] = useState<Record<string, BatchItem[]>>({});
     const [mappings, setMappings] = useState<Mapping[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -99,9 +107,11 @@ export default function TeachersPage() {
             practical: false,
             sla: false,
         },
+        selectedBatches: [] as string[], // Selected batch IDs for practical
     });
 
     const selectedSubjectData = subjects.find((s) => s._id === mappingForm.subject);
+    const selectedClassBatches = mappingForm.classId ? (batches[mappingForm.classId] || []) : [];
 
     useEffect(() => {
         fetchData();
@@ -109,17 +119,33 @@ export default function TeachersPage() {
 
     const fetchData = async () => {
         try {
-            const [teachersRes, subjectsRes, classesRes] = await Promise.all([
+            const [teachersRes, subjectsRes, classesRes, batchesRes] = await Promise.all([
                 fetch('/api/teachers'),
                 fetch('/api/subjects'),
                 fetch('/api/classes'),
+                fetch('/api/batches'),
             ]);
             const teachersData = await teachersRes.json();
             const subjectsData = await subjectsRes.json();
             const classesData = await classesRes.json();
+            const batchesData = await batchesRes.json();
+
             setTeachers(teachersData.teachers || []);
             setSubjects(subjectsData.subjects?.filter((s: Subject & { isActive: boolean }) => s.isActive) || []);
             setClasses(classesData.classes?.filter((c: ClassItem & { isActive: boolean }) => c.isActive) || []);
+
+            // Group batches by class
+            const batchesByClass: Record<string, BatchItem[]> = {};
+            (batchesData.batches || []).forEach((b: BatchItem) => {
+                const classId = typeof b.class === 'string' ? b.class : b.class?._id;
+                if (classId) {
+                    if (!batchesByClass[classId]) {
+                        batchesByClass[classId] = [];
+                    }
+                    batchesByClass[classId].push(b);
+                }
+            });
+            setBatches(batchesByClass);
         } catch (error) {
             console.error('Error fetching data:', error);
         } finally {
@@ -173,18 +199,25 @@ export default function TeachersPage() {
         try {
             // Create mappings for each selected type
             const results = await Promise.all(
-                typesToAdd.map((type) =>
-                    fetch('/api/teacher-mappings', {
+                typesToAdd.map((type) => {
+                    const body: Record<string, unknown> = {
+                        teacher: selectedTeacher._id,
+                        subject: mappingForm.subject,
+                        classId: mappingForm.classId,
+                        teachingType: type,
+                    };
+
+                    // Add batches only for practical type
+                    if (type === 'practical' && mappingForm.selectedBatches.length > 0) {
+                        body.batches = mappingForm.selectedBatches;
+                    }
+
+                    return fetch('/api/teacher-mappings', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            teacher: selectedTeacher._id,
-                            subject: mappingForm.subject,
-                            classId: mappingForm.classId,
-                            teachingType: type,
-                        }),
-                    })
-                )
+                        body: JSON.stringify(body),
+                    });
+                })
             );
 
             const hasError = results.some((r) => !r.ok);
@@ -200,6 +233,7 @@ export default function TeachersPage() {
                 subject: '',
                 classId: '',
                 types: { theory: false, practical: false, sla: false },
+                selectedBatches: [],
             });
             fetchTeacherMappings(selectedTeacher._id);
         } catch (error) {
@@ -225,6 +259,7 @@ export default function TeachersPage() {
             subject: '',
             classId: '',
             types: { theory: false, practical: false, sla: false },
+            selectedBatches: [],
         });
         await fetchTeacherMappings(teacher._id);
         setIsMappingOpen(true);
@@ -289,7 +324,28 @@ export default function TeachersPage() {
                 practical: types.hasPractical,
                 sla: types.hasSLA,
             },
+            selectedBatches: [],
         });
+    };
+
+    // Handle class change - auto-select all batches if practical is selected
+    const handleClassChange = (classId: string) => {
+        const classBatches = batches[classId] || [];
+        setMappingForm({
+            ...mappingForm,
+            classId,
+            selectedBatches: classBatches.map(b => b._id), // Select all batches by default
+        });
+    };
+
+    // Toggle a single batch selection
+    const toggleBatchSelection = (batchId: string) => {
+        setMappingForm(prev => ({
+            ...prev,
+            selectedBatches: prev.selectedBatches.includes(batchId)
+                ? prev.selectedBatches.filter(id => id !== batchId)
+                : [...prev.selectedBatches, batchId],
+        }));
     };
 
     if (isLoading) {
@@ -366,7 +422,7 @@ export default function TeachersPage() {
                 </Dialog>
             </div>
 
-            <div className="border rounded-lg overflow-x-auto">
+            <div className="border rounded-lg">
                 <Table>
                     <TableHeader>
                         <TableRow>
@@ -448,10 +504,9 @@ export default function TeachersPage() {
                         {/* Add Mapping Form */}
                         <form onSubmit={handleMappingSubmit} className="space-y-4 p-4 border rounded-lg bg-muted/50">
                             <h3 className="font-medium">Add New Mapping</h3>
-
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label>Subject</Label>
+                                    <Label htmlFor="subject">Subject</Label>
                                     <Select
                                         value={mappingForm.subject}
                                         onValueChange={handleSubjectChange}
@@ -469,12 +524,10 @@ export default function TeachersPage() {
                                     </Select>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label>Class</Label>
+                                    <Label htmlFor="class">Class</Label>
                                     <Select
                                         value={mappingForm.classId}
-                                        onValueChange={(value) =>
-                                            setMappingForm({ ...mappingForm, classId: value })
-                                        }
+                                        onValueChange={handleClassChange}
                                     >
                                         <SelectTrigger>
                                             <SelectValue placeholder="Select class" />
@@ -552,6 +605,30 @@ export default function TeachersPage() {
                                 </div>
                             )}
 
+                            {/* Batch Selection - show when practical is selected and class has batches */}
+                            {mappingForm.types.practical && mappingForm.classId && selectedClassBatches.length > 0 && (
+                                <div className="space-y-2">
+                                    <Label>Select Batches for Practical</Label>
+                                    <div className="p-3 border rounded-md bg-background space-y-2">
+                                        {selectedClassBatches.map((batch) => (
+                                            <div key={batch._id} className="flex items-center gap-2">
+                                                <Checkbox
+                                                    id={`batch-${batch._id}`}
+                                                    checked={mappingForm.selectedBatches.includes(batch._id)}
+                                                    onCheckedChange={() => toggleBatchSelection(batch._id)}
+                                                />
+                                                <Label htmlFor={`batch-${batch._id}`} className="cursor-pointer font-normal">
+                                                    {batch.name}
+                                                </Label>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <p className="text-xs text-muted-foreground">
+                                        By default all batches are selected. Deselect if another teacher handles those batches.
+                                    </p>
+                                </div>
+                            )}
+
                             <Button
                                 type="submit"
                                 disabled={
@@ -580,6 +657,7 @@ export default function TeachersPage() {
                                                 <TableHead>Subject</TableHead>
                                                 <TableHead>Class</TableHead>
                                                 <TableHead>Type</TableHead>
+                                                <TableHead>Batches</TableHead>
                                                 <TableHead>Action</TableHead>
                                             </TableRow>
                                         </TableHeader>
@@ -601,6 +679,19 @@ export default function TeachersPage() {
                                                     </TableCell>
                                                     <TableCell>
                                                         <Badge>{getTypeLabel(mapping.teachingType)}</Badge>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {mapping.teachingType === 'practical' && mapping.batches && mapping.batches.length > 0 ? (
+                                                            <div className="flex flex-wrap gap-1">
+                                                                {mapping.batches.map((batch) => (
+                                                                    <Badge key={batch._id} variant="outline" className="text-xs">
+                                                                        {batch.name}
+                                                                    </Badge>
+                                                                ))}
+                                                            </div>
+                                                        ) : (
+                                                            <span className="text-muted-foreground text-sm">-</span>
+                                                        )}
                                                     </TableCell>
                                                     <TableCell>
                                                         <Button

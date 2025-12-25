@@ -1,60 +1,61 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
-import Subject from '@/models/Subject';
+import Question from '@/models/Question';
 import { auth } from '@/lib/auth';
 
-// Update a subject
+// Update a question (super_admin only)
 export async function PATCH(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const session = await auth();
-        if (!session || !['iamp_coordinator', 'feedback_coordinator'].includes(session.user.role)) {
+        if (!session || session.user.role !== 'super_admin') {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
 
         await connectDB();
+
         const { id } = await params;
         const body = await request.json();
 
-        const subject = await Subject.findByIdAndUpdate(id, body, { new: true })
-            .populate('department', 'name shortName');
+        const question = await Question.findByIdAndUpdate(id, body, { new: true });
 
-        if (!subject) {
-            return NextResponse.json({ error: 'Subject not found' }, { status: 404 });
+        if (!question) {
+            return NextResponse.json({ error: 'Question not found' }, { status: 404 });
         }
 
-        return NextResponse.json({ subject }, { status: 200 });
+        return NextResponse.json({ question }, { status: 200 });
     } catch (error) {
-        console.error('Error updating subject:', error);
+        console.error('Error updating question:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
 
-// Delete a subject
+// Delete a question (super_admin only)
 export async function DELETE(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const session = await auth();
-        if (!session || !['iamp_coordinator', 'feedback_coordinator'].includes(session.user.role)) {
+        if (!session || session.user.role !== 'super_admin') {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
 
         await connectDB();
+
         const { id } = await params;
 
-        const subject = await Subject.findByIdAndDelete(id);
+        const question = await Question.findByIdAndDelete(id);
 
-        if (!subject) {
-            return NextResponse.json({ error: 'Subject not found' }, { status: 404 });
+        if (!question) {
+            return NextResponse.json({ error: 'Question not found' }, { status: 404 });
         }
 
-        return NextResponse.json({ message: 'Subject deleted' }, { status: 200 });
+        return NextResponse.json({ message: 'Question deleted' }, { status: 200 });
     } catch (error) {
-        console.error('Error deleting subject:', error);
+        console.error('Error deleting question:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }

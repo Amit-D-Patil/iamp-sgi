@@ -6,6 +6,7 @@ export interface ITeacherMapping extends Document {
     class: Types.ObjectId;
     department: Types.ObjectId;
     teachingType: 'theory' | 'practical' | 'sla';
+    batches?: Types.ObjectId[]; // For practical: which batches this teacher handles
     createdBy: Types.ObjectId;
     isActive: boolean;
     createdAt: Date;
@@ -39,6 +40,10 @@ const TeacherMappingSchema = new Schema<ITeacherMapping>(
             enum: ['theory', 'practical', 'sla'],
             required: true,
         },
+        batches: [{
+            type: Schema.Types.ObjectId,
+            ref: 'Batch',
+        }],
         createdBy: {
             type: Schema.Types.ObjectId,
             ref: 'User',

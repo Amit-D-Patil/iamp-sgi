@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
-import Class from '@/models/Class';
+import FeedbackSession from '@/models/FeedbackSession';
 import User from '@/models/User';
 import { auth } from '@/lib/auth';
 
-// Update class
+// Toggle or update a feedback session
 export async function PATCH(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const session = await auth();
-        if (!session || !['iamp_coordinator', 'feedback_coordinator'].includes(session.user.role)) {
+        if (!session || session.user.role !== 'feedback_coordinator') {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
 
@@ -25,33 +25,39 @@ export async function PATCH(
         const { id } = await params;
         const body = await request.json();
 
-        // Ensure class belongs to user's department
-        const existingClass = await Class.findOne({
+        // Ensure session belongs to user's department
+        const existingSession = await FeedbackSession.findOne({
             _id: id,
             department: user.department,
         });
 
-        if (!existingClass) {
-            return NextResponse.json({ error: 'Class not found' }, { status: 404 });
+        if (!existingSession) {
+            return NextResponse.json({ error: 'Session not found' }, { status: 404 });
         }
 
-        const updatedClass = await Class.findByIdAndUpdate(id, body, { new: true });
+        // If closing the session, set closedAt
+        if (body.isActive === false && existingSession.isActive) {
+            body.closedAt = new Date();
+        }
 
-        return NextResponse.json({ class: updatedClass }, { status: 200 });
+        const feedbackSession = await FeedbackSession.findByIdAndUpdate(id, body, { new: true })
+            .populate('class', 'displayName year division');
+
+        return NextResponse.json({ session: feedbackSession }, { status: 200 });
     } catch (error) {
-        console.error('Error updating class:', error);
+        console.error('Error updating feedback session:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
 
-// Delete class
+// Delete a feedback session
 export async function DELETE(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
         const session = await auth();
-        if (!session || !['iamp_coordinator', 'feedback_coordinator'].includes(session.user.role)) {
+        if (!session || session.user.role !== 'feedback_coordinator') {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
 
@@ -64,21 +70,21 @@ export async function DELETE(
 
         const { id } = await params;
 
-        // Ensure class belongs to user's department
-        const existingClass = await Class.findOne({
+        // Ensure session belongs to user's department
+        const feedbackSession = await FeedbackSession.findOne({
             _id: id,
             department: user.department,
         });
 
-        if (!existingClass) {
-            return NextResponse.json({ error: 'Class not found' }, { status: 404 });
+        if (!feedbackSession) {
+            return NextResponse.json({ error: 'Session not found' }, { status: 404 });
         }
 
-        await Class.findByIdAndDelete(id);
+        await FeedbackSession.findByIdAndDelete(id);
 
-        return NextResponse.json({ message: 'Class deleted' }, { status: 200 });
+        return NextResponse.json({ message: 'Session deleted' }, { status: 200 });
     } catch (error) {
-        console.error('Error deleting class:', error);
+        console.error('Error deleting feedback session:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }

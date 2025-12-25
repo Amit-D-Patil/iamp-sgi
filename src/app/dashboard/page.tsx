@@ -20,6 +20,7 @@ IAMPPoint;
 const roleLabels: Record<string, string> = {
     super_admin: 'Super Admin',
     iamp_coordinator: 'IAMP Coordinator',
+    feedback_coordinator: 'Feedback Coordinator',
     principal: 'Principal',
     hod: 'Head of Department',
 };
@@ -159,6 +160,51 @@ export default async function DashboardPage() {
                         </CardHeader>
                         <CardContent>
                             <p className="text-xl font-bold">{dept.name}</p>
+                        </CardContent>
+                    </Card>
+                </div>
+            </div>
+        );
+    }
+
+    // Feedback Coordinator Dashboard
+    if (role === 'feedback_coordinator') {
+        const [subjectCount, teacherCount] = await Promise.all([
+            Subject.countDocuments({ department: dept._id }),
+            Teacher.countDocuments({ department: dept._id }),
+        ]);
+
+        return (
+            <div>
+                <div className="mb-6">
+                    <h1 className="text-2xl font-bold">Welcome, {session.user.name}</h1>
+                    <div className="flex items-center gap-2 mt-1">
+                        <Badge>{roleLabels[role]}</Badge>
+                        <span className="text-muted-foreground">
+                            {dept.name} ({dept.shortName})
+                        </span>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-sm font-medium text-muted-foreground">
+                                Subjects
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-3xl font-bold">{subjectCount}</p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <CardTitle className="text-sm font-medium text-muted-foreground">
+                                Teachers
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-3xl font-bold">{teacherCount}</p>
                         </CardContent>
                     </Card>
                 </div>

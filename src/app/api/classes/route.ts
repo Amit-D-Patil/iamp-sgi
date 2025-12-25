@@ -39,7 +39,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
     try {
         const session = await auth();
-        if (!session || session.user.role !== 'iamp_coordinator') {
+        if (!session || !['iamp_coordinator', 'feedback_coordinator'].includes(session.user.role)) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
 

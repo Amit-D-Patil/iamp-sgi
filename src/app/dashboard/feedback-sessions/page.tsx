@@ -1,0 +1,292 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+
+interface ClassItem {
+    _id: string;
+    displayName: string;
+}
+
+interface FeedbackSession {
+    _id: string;
+    class: { _id: string; displayName: string };
+    studentCount: number;
+    uniqueCode: string;
+    isActive: boolean;
+    responseCount: number;
+    createdAt: string;
+    closedAt?: string;
+}
+
+export default function FeedbackSessionsPage() {
+    const [sessions, setSessions] = useState<FeedbackSession[]>([]);
+    const [classes, setClasses] = useState<ClassItem[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isOpen, setIsOpen] = useState(false);
+    const [formData, setFormData] = useState({
+        classId: '',
+        studentCount: '',
+    });
+
+    useEffect(() => {
+        fetchData();
+    }, []);
+
+    const fetchData = async () => {
+        try {
+            const [sessionsRes, classesRes] = await Promise.all([
+                fetch('/api/feedback-sessions'),
+                fetch('/api/classes'),
+            ]);
+            const sessionsData = await sessionsRes.json();
+            const classesData = await classesRes.json();
+
+            setSessions(sessionsData.sessions || []);
+            setClasses(classesData.classes?.filter((c: ClassItem & { isActive: boolean }) => c.isActive) || []);
+        } catch (error) {
+            console.error('Error fetching data:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        try {
+            const res = await fetch('/api/feedback-sessions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    classId: formData.classId,
+                    studentCount: parseInt(formData.studentCount),
+                }),
+            });
+            if (res.ok) {
+                setIsOpen(false);
+                setFormData({ classId: '', studentCount: '' });
+                fetchData();
+            } else {
+                const data = await res.json();
+                alert(data.error || 'Error creating feedback session');
+            }
+        } catch (error) {
+            console.error('Error creating session:', error);
+        }
+    };
+
+    const toggleStatus = async (id: string, currentStatus: boolean) => {
+        try {
+            await fetch(`/api/feedback-sessions/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ isActive: !currentStatus }),
+            });
+            fetchData();
+        } catch (error) {
+            console.error('Error updating status:', error);
+        }
+    };
+
+    const deleteSession = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this feedback session?')) return;
+        try {
+            await fetch(`/api/feedback-sessions/${id}`, { method: 'DELETE' });
+            fetchData();
+        } catch (error) {
+            console.error('Error deleting session:', error);
+        }
+    };
+
+    const copyLink = (code: string) => {
+        const url = `${window.location.origin}/feedback/${code}`;
+        navigator.clipboard.writeText(url);
+        alert('Link copied to clipboard!');
+    };
+
+    if (isLoading) {
+        return <div>Loading...</div>;
+    }
+
+    return (
+        <div>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+                <div>
+                    <h1 className="text-2xl font-bold">Feedback Sessions</h1>
+                    <p className="text-muted-foreground text-sm">
+                        Create and manage student feedback collection
+                    </p>
+                </div>
+                <Dialog open={isOpen} onOpenChange={setIsOpen}>
+                    <DialogTrigger asChild>
+                        <Button>Start New Feedback</Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Start Feedback Collection</DialogTitle>
+                        </DialogHeader>
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="class">Select Class</Label>
+                                <Select
+                                    value={formData.classId}
+                                    onValueChange={(value) =>
+                                        setFormData({ ...formData, classId: value })
+                                    }
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select class" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {classes.map((cls) => (
+                                            <SelectItem key={cls._id} value={cls._id}>
+                                                {cls.displayName}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="studentCount">Number of Students</Label>
+                                <Input
+                                    id="studentCount"
+                                    type="number"
+                                    min="1"
+                                    value={formData.studentCount}
+                                    onChange={(e) =>
+                                        setFormData({ ...formData, studentCount: e.target.value })
+                                    }
+                                    placeholder="e.g., 60"
+                                    required
+                                />
+                                <p className="text-xs text-muted-foreground">
+                                    Maximum number of feedback responses allowed
+                                </p>
+                            </div>
+                            <Button
+                                type="submit"
+                                className="w-full"
+                                disabled={!formData.classId || !formData.studentCount}
+                            >
+                                Create Feedback Session
+                            </Button>
+                        </form>
+                    </DialogContent>
+                </Dialog>
+            </div>
+
+            {sessions.length === 0 ? (
+                <Card>
+                    <CardHeader>
+                        <CardTitle>No Feedback Sessions</CardTitle>
+                        <CardDescription>
+                            Create your first feedback session to start collecting student feedback.
+                        </CardDescription>
+                    </CardHeader>
+                </Card>
+            ) : (
+                <div className="border rounded-lg">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Class</TableHead>
+                                <TableHead>Students</TableHead>
+                                <TableHead>Responses</TableHead>
+                                <TableHead>Link</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead>Active</TableHead>
+                                <TableHead>Actions</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {sessions.map((session) => (
+                                <TableRow key={session._id}>
+                                    <TableCell className="font-medium">
+                                        {session.class.displayName}
+                                    </TableCell>
+                                    <TableCell>{session.studentCount}</TableCell>
+                                    <TableCell>
+                                        <Badge
+                                            variant={session.responseCount >= session.studentCount ? 'default' : 'secondary'}
+                                        >
+                                            {session.responseCount} / {session.studentCount}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => copyLink(session.uniqueCode)}
+                                        >
+                                            Copy Link
+                                        </Button>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge variant={session.isActive ? 'default' : 'secondary'}>
+                                            {session.isActive ? 'Open' : 'Closed'}
+                                        </Badge>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Switch
+                                            checked={session.isActive}
+                                            onCheckedChange={() => toggleStatus(session._id, session.isActive)}
+                                        />
+                                    </TableCell>
+                                    <TableCell>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="text-destructive hover:text-destructive"
+                                            onClick={() => deleteSession(session._id)}
+                                        >
+                                            Delete
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
+            )}
+
+            {sessions.length > 0 && (
+                <div className="mt-4 p-4 bg-muted rounded-lg">
+                    <h3 className="font-medium mb-2">How it works:</h3>
+                    <ul className="text-sm text-muted-foreground space-y-1">
+                        <li>1. Create a feedback session for a class</li>
+                        <li>2. Copy and share the unique link with students</li>
+                        <li>3. Students select their batch and rate all teachers</li>
+                        <li>4. Monitor responses and close when complete</li>
+                    </ul>
+                </div>
+            )}
+        </div>
+    );
+}
