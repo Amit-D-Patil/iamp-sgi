@@ -24,14 +24,18 @@ interface NavLink {
 }
 
 const allLinks: NavLink[] = [
-    { href: '/dashboard', label: 'Dashboard', roles: ['super_admin', 'iamp_coordinator', 'principal', 'hod'] },
+    { href: '/dashboard', label: 'Dashboard', roles: ['super_admin', 'iamp_coordinator', 'feedback_coordinator', 'principal', 'hod'] },
     { href: '/dashboard/users', label: 'Users', roles: ['super_admin'] },
     { href: '/dashboard/departments', label: 'Departments', roles: ['super_admin'] },
     { href: '/dashboard/semesters', label: 'Semesters', roles: ['super_admin'] },
     { href: '/dashboard/iamp-points', label: 'IAMP Points', roles: ['super_admin'] },
-    { href: '/dashboard/classes', label: 'Classes', roles: ['iamp_coordinator'] },
-    { href: '/dashboard/subjects', label: 'Subjects', roles: ['iamp_coordinator'] },
-    { href: '/dashboard/teachers', label: 'Teachers', roles: ['iamp_coordinator'] },
+    { href: '/dashboard/questions', label: 'Feedback Questions', roles: ['super_admin'] },
+    { href: '/dashboard/classes', label: 'Classes', roles: ['iamp_coordinator', 'feedback_coordinator'] },
+    { href: '/dashboard/subjects', label: 'Subjects', roles: ['iamp_coordinator', 'feedback_coordinator'] },
+    { href: '/dashboard/teachers', label: 'Teachers', roles: ['iamp_coordinator', 'feedback_coordinator'] },
+    { href: '/dashboard/feedback-sessions', label: 'Feedback Sessions', roles: ['feedback_coordinator'] },
+    { href: '/dashboard/feedback-reports', label: 'Feedback Reports', roles: ['feedback_coordinator', 'principal', 'hod'] },
+    { href: '/dashboard/text-comments', label: 'Text Comments', roles: ['feedback_coordinator', 'principal', 'hod'] },
     { href: '/dashboard/supervision', label: 'Supervision', roles: ['iamp_coordinator'] },
     { href: '/dashboard/reports', label: 'Reports', roles: ['super_admin', 'iamp_coordinator', 'principal', 'hod'] },
 ];

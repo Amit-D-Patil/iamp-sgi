@@ -4,6 +4,7 @@ import TeacherMapping from '@/models/TeacherMapping';
 import Teacher from '@/models/Teacher';
 import Subject from '@/models/Subject';
 import Class from '@/models/Class';
+import Batch from '@/models/Batch';
 import User from '@/models/User';
 import { auth } from '@/lib/auth';
 
@@ -11,6 +12,7 @@ import { auth } from '@/lib/auth';
 Teacher;
 Subject;
 Class;
+Batch;
 
 // Get mappings for a specific teacher or all
 export async function GET(request: NextRequest) {
@@ -39,6 +41,7 @@ export async function GET(request: NextRequest) {
             .populate('teacher', 'name shortName')
             .populate('subject', 'name code')
             .populate('class', 'displayName year division')
+            .populate('batches', 'name')
             .sort({ createdAt: -1 });
 
         return NextResponse.json({ mappings }, { status: 200 });
@@ -52,7 +55,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
     try {
         const session = await auth();
-        if (!session || session.user.role !== 'iamp_coordinator') {
+        if (!session || !['iamp_coordinator', 'feedback_coordinator'].includes(session.user.role)) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
 
@@ -64,7 +67,7 @@ export async function POST(request: NextRequest) {
         }
 
         const body = await request.json();
-        const { teacher, subject, classId, teachingType } = body;
+        const { teacher, subject, classId, teachingType, batches } = body;
 
         if (!teacher || !subject || !classId || !teachingType) {
             return NextResponse.json(
@@ -73,7 +76,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Check if mapping already exists
+        // Check if mapping already exists for this teacher
         const existing = await TeacherMapping.findOne({
             teacher,
             subject,
@@ -88,18 +91,27 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const mapping = await TeacherMapping.create({
+        // Create mapping with optional batches (for practical)
+        const mappingData: Record<string, unknown> = {
             teacher,
             subject,
             class: classId,
             department: user.department,
             teachingType,
             createdBy: session.user.id,
-        });
+        };
+
+        // Only add batches for practical type
+        if (teachingType === 'practical' && batches && Array.isArray(batches)) {
+            mappingData.batches = batches;
+        }
+
+        const mapping = await TeacherMapping.create(mappingData);
 
         await mapping.populate('teacher', 'name shortName');
         await mapping.populate('subject', 'name code');
         await mapping.populate('class', 'displayName year division');
+        await mapping.populate('batches', 'name');
 
         return NextResponse.json({ mapping }, { status: 201 });
     } catch (error) {

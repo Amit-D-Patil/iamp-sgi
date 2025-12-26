@@ -48,6 +48,7 @@ interface User {
 const roleLabels: Record<string, string> = {
     super_admin: 'Super Admin',
     iamp_coordinator: 'IAMP Coordinator',
+    feedback_coordinator: 'Feedback Coordinator',
     principal: 'Principal',
     hod: 'HOD',
 };
@@ -55,6 +56,7 @@ const roleLabels: Record<string, string> = {
 const roleColors: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
     super_admin: 'destructive',
     iamp_coordinator: 'default',
+    feedback_coordinator: 'default',
     principal: 'secondary',
     hod: 'outline',
 };
@@ -135,7 +137,7 @@ export default function UsersPage() {
         ? users.filter((u) => u.role !== 'super_admin')
         : users.filter((u) => u.role === filterRole);
 
-    const needsDepartment = ['iamp_coordinator', 'hod'].includes(formData.role);
+    const needsDepartment = ['iamp_coordinator', 'feedback_coordinator', 'hod'].includes(formData.role);
 
     if (isLoading) {
         return <div>Loading...</div>;
@@ -152,7 +154,8 @@ export default function UsersPage() {
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">All Users</SelectItem>
-                            <SelectItem value="iamp_coordinator">Coordinators</SelectItem>
+                            <SelectItem value="iamp_coordinator">IAMP Coordinators</SelectItem>
+                            <SelectItem value="feedback_coordinator">Feedback Coordinators</SelectItem>
                             <SelectItem value="principal">Principals</SelectItem>
                             <SelectItem value="hod">HODs</SelectItem>
                         </SelectContent>
@@ -179,6 +182,7 @@ export default function UsersPage() {
                                         </SelectTrigger>
                                         <SelectContent>
                                             <SelectItem value="iamp_coordinator">IAMP Coordinator</SelectItem>
+                                            <SelectItem value="feedback_coordinator">Feedback Coordinator</SelectItem>
                                             <SelectItem value="principal">Principal</SelectItem>
                                             <SelectItem value="hod">HOD</SelectItem>
                                         </SelectContent>

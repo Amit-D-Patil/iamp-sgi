@@ -91,6 +91,7 @@ export default function ReportsPage() {
                 fetchReport();
             }
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedDepartment, selectedSemester, canSelectDepartment]);
 
     const fetchInitialData = async () => {

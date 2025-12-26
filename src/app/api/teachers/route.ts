@@ -8,7 +8,7 @@ import { auth } from '@/lib/auth';
 // Ensure models are registered
 Department;
 
-// Get teachers for coordinator's department
+// Get teachers for coordinator's department (or all for super_admin/principal)
 export async function GET() {
     try {
         const session = await auth();
@@ -20,13 +20,22 @@ export async function GET() {
 
         // Get user's department
         const user = await User.findById(session.user.id);
-        if (!user?.department) {
-            return NextResponse.json({ error: 'No department assigned' }, { status: 400 });
-        }
 
-        const teachers = await Teacher.find({ department: user.department })
-            .populate('department', 'name shortName')
-            .sort({ createdAt: -1 });
+        // Super admin and principal can see all teachers
+        // Others need a department assigned
+        let teachers;
+        if (session.user.role === 'super_admin' || session.user.role === 'principal') {
+            teachers = await Teacher.find()
+                .populate('department', 'name shortName')
+                .sort({ createdAt: -1 });
+        } else {
+            if (!user?.department) {
+                return NextResponse.json({ error: 'No department assigned' }, { status: 400 });
+            }
+            teachers = await Teacher.find({ department: user.department })
+                .populate('department', 'name shortName')
+                .sort({ createdAt: -1 });
+        }
 
         return NextResponse.json({ teachers }, { status: 200 });
     } catch (error) {
@@ -39,7 +48,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
     try {
         const session = await auth();
-        if (!session || session.user.role !== 'iamp_coordinator') {
+        if (!session || !['iamp_coordinator', 'feedback_coordinator'].includes(session.user.role)) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
 

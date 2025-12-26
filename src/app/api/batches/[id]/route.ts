@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
-import TeacherMapping from '@/models/TeacherMapping';
+import Batch from '@/models/Batch';
 import User from '@/models/User';
 import { auth } from '@/lib/auth';
 
-// Delete mapping
+// Delete a batch
 export async function DELETE(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
@@ -24,26 +24,22 @@ export async function DELETE(
 
         const { id } = await params;
 
-        // Ensure mapping belongs to user's department
-        const mapping = await TeacherMapping.findOne({
-            _id: id,
-            department: user.department,
-        });
-
-        if (!mapping) {
-            return NextResponse.json({ error: 'Mapping not found' }, { status: 404 });
+        // Ensure batch belongs to user's department
+        const batch = await Batch.findOne({ _id: id, department: user.department });
+        if (!batch) {
+            return NextResponse.json({ error: 'Batch not found' }, { status: 404 });
         }
 
-        await TeacherMapping.findByIdAndDelete(id);
+        await Batch.findByIdAndDelete(id);
 
-        return NextResponse.json({ message: 'Mapping deleted' }, { status: 200 });
+        return NextResponse.json({ message: 'Batch deleted' }, { status: 200 });
     } catch (error) {
-        console.error('Error deleting mapping:', error);
+        console.error('Error deleting batch:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
 
-// Update remarks for a mapping
+// Update a batch
 export async function PATCH(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
@@ -63,24 +59,19 @@ export async function PATCH(
 
         const { id } = await params;
         const body = await request.json();
-        const { remarks } = body;
 
-        // Ensure mapping belongs to user's department
-        const mapping = await TeacherMapping.findOne({
-            _id: id,
-            department: user.department,
-        });
-
-        if (!mapping) {
-            return NextResponse.json({ error: 'Mapping not found' }, { status: 404 });
+        // Ensure batch belongs to user's department
+        const existingBatch = await Batch.findOne({ _id: id, department: user.department });
+        if (!existingBatch) {
+            return NextResponse.json({ error: 'Batch not found' }, { status: 404 });
         }
 
-        mapping.remarks = remarks || '';
-        await mapping.save();
+        const batch = await Batch.findByIdAndUpdate(id, body, { new: true })
+            .populate('class', 'displayName');
 
-        return NextResponse.json({ message: 'Remarks updated', mapping }, { status: 200 });
+        return NextResponse.json({ batch }, { status: 200 });
     } catch (error) {
-        console.error('Error updating remarks:', error);
+        console.error('Error updating batch:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
