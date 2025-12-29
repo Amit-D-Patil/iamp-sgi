@@ -20,8 +20,8 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Only allow feedback_coordinator and above
-        const allowedRoles = ['super_admin', 'feedback_coordinator', 'principal', 'hod'];
+        // Only allow principal and super_admin to view text comments
+        const allowedRoles = ['super_admin', 'principal'];
         if (!allowedRoles.includes(session.user.role)) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }

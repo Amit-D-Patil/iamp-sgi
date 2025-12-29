@@ -35,7 +35,7 @@ const allLinks: NavLink[] = [
     { href: '/dashboard/teachers', label: 'Teachers', roles: ['iamp_coordinator', 'feedback_coordinator'] },
     { href: '/dashboard/feedback-sessions', label: 'Feedback Sessions', roles: ['feedback_coordinator'] },
     { href: '/dashboard/feedback-reports', label: 'Feedback Reports', roles: ['feedback_coordinator', 'principal', 'hod'] },
-    { href: '/dashboard/text-comments', label: 'Text Comments', roles: ['feedback_coordinator', 'principal', 'hod'] },
+    { href: '/dashboard/text-comments', label: 'Text Comments', roles: ['super_admin', 'principal'] },
     { href: '/dashboard/supervision', label: 'Supervision', roles: ['iamp_coordinator'] },
     { href: '/dashboard/reports', label: 'Reports', roles: ['super_admin', 'iamp_coordinator', 'principal', 'hod'] },
 ];
@@ -52,7 +52,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     return (
         <div className="min-h-screen bg-background">
             {/* Header */}
-            <header className="border-b sticky top-0 bg-background z-50">
+            <header className="border-b sticky top-0 bg-background z-50 print:hidden">
                 <div className="max-w-7xl mx-auto flex h-14 items-center px-4 md:px-6 gap-4 md:gap-6">
                     {/* Mobile Menu Button */}
                     <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>

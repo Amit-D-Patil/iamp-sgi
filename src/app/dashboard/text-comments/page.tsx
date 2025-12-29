@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import {
     Select,
@@ -59,6 +60,8 @@ export default function TextCommentsPage() {
 
 function TextCommentsContent() {
     const searchParams = useSearchParams();
+    const router = useRouter();
+    const { data: session } = useSession();
     const showBatchWise = searchParams.get('batch') === 'true';
 
     const [comments, setComments] = useState<ClassComments[]>([]);
@@ -66,9 +69,21 @@ function TextCommentsContent() {
     const [selectedSession, setSelectedSession] = useState<string>('all');
     const [isLoading, setIsLoading] = useState(true);
 
+    // Check role and redirect if not authorized
     useEffect(() => {
-        fetchData();
-    }, []);
+        const allowedRoles = ['super_admin', 'principal'];
+        if (session && !allowedRoles.includes(session.user?.role || '')) {
+            router.replace('/dashboard');
+        }
+    }, [session, router]);
+
+    useEffect(() => {
+        // Only fetch if authorized
+        const allowedRoles = ['super_admin', 'principal'];
+        if (session && allowedRoles.includes(session.user?.role || '')) {
+            fetchData();
+        }
+    }, [session]);
 
     const fetchData = async () => {
         try {
