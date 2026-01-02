@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
+import Image from 'next/image';
+import letterhead from '@/assets/letterhead.jpg';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
@@ -132,49 +134,7 @@ export default function ReportsPage() {
     };
 
     const handlePrint = () => {
-        const printContent = printRef.current;
-        if (!printContent || !report) return;
-
-        const printWindow = window.open('', '_blank');
-        if (!printWindow) return;
-
-        printWindow.document.write(`
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <title>IAMP Report - ${report.department.name}</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 20px; font-size: 12px; }
-            .header { text-align: center; margin-bottom: 20px; }
-            .header h1 { margin: 0; font-size: 18px; }
-            .header p { margin: 5px 0; color: #666; }
-            table { width: 100%; border-collapse: collapse; }
-            th, td { border: 1px solid #000; padding: 6px; text-align: center; }
-            th { background-color: #f0f0f0; }
-            .point-name { text-align: left; }
-            .completed { background-color: #d4edda; }
-            .not-completed { background-color: #f8d7da; }
-            .na-cell { background-color: #e9ecef; color: #6c757d; }
-            .signature-row td { height: 50px; vertical-align: bottom; }
-            .checked-by { margin-top: 30px; text-align: right; }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h1>IAMP Supervision Report</h1>
-            <p>Department: ${report.department.name} (${report.department.shortName})</p>
-            <p>Semester: ${report.semester.name}</p>
-          </div>
-          ${printContent.innerHTML}
-          <div class="checked-by">
-            <p><strong>Checked By:</strong> ${report.coordinator?.name || '_________________'}</p>
-            <p>IAMP Coordinator</p>
-          </div>
-        </body>
-      </html>
-    `);
-        printWindow.document.close();
-        printWindow.print();
+        window.print();
     };
 
     const getStatusCell = (status: string) => {
@@ -212,7 +172,7 @@ export default function ReportsPage() {
 
     return (
         <div>
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 print:hidden">
                 <h1 className="text-2xl font-bold">Reports</h1>
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                     {canSelectDepartment && (
@@ -300,8 +260,8 @@ export default function ReportsPage() {
                     </CardContent>
                 </Card>
             ) : (
-                <Card>
-                    <CardHeader>
+                <Card className="print:hidden">
+                    <CardHeader className="print:hidden">
                         <CardTitle className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
                                 <span>Department: {report.department.name}</span>
@@ -311,7 +271,7 @@ export default function ReportsPage() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="overflow-x-auto">
-                        <table className="w-full border-collapse text-sm">
+                        <table className="w-full border-collapse text-sm print:hidden">
                             <thead>
                                 <tr className="bg-yellow-100">
                                     <th className="border p-2 text-left" rowSpan={4}>Sr.No.</th>
@@ -378,71 +338,139 @@ export default function ReportsPage() {
                                 </tr>
                             </tbody>
                         </table>
-
-                        <div ref={printRef} className="hidden">
-                            <table>
-                                <thead>
-                                    <tr>
-                                        <th rowSpan={4}>Sr.No.</th>
-                                        <th rowSpan={4}>Index</th>
-                                    </tr>
-                                    <tr>
-                                        {report.columns.map((col) => (
-                                            <th key={`print-name-${getColumnKey(col)}`}>{col.teacherShortName || col.teacherName}</th>
-                                        ))}
-                                    </tr>
-                                    <tr>
-                                        {report.columns.map((col) => (
-                                            <th key={`print-subject-${getColumnKey(col)}`}>{col.subjectCode || col.subjectName}</th>
-                                        ))}
-                                    </tr>
-                                    <tr>
-                                        {report.columns.map((col) => (
-                                            <th key={`print-class-${getColumnKey(col)}`}>{col.className || '-'}</th>
-                                        ))}
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {report.rows.map((row) => (
-                                        <tr key={row.pointId}>
-                                            <td>{row.srNo}</td>
-                                            <td className="point-name">{row.pointName}</td>
-                                            {report.columns.map((col) => (
-                                                <td key={getColumnKey(col)} className={row.values[getColumnKey(col)] === 'na' ? 'na-cell' : ''}>
-                                                    {getStatusText(row.values[getColumnKey(col)])}
-                                                </td>
-                                            ))}
-                                        </tr>
-                                    ))}
-                                    <tr>
-                                        <td colSpan={2}><strong>Status</strong></td>
-                                        {report.columns.map((col) => {
-                                            const completed = isColumnCompleted(col);
-                                            return (
-                                                <td key={`${getColumnKey(col)}-status`} className={completed ? 'completed' : 'not-completed'}>
-                                                    {completed ? 'Completed' : 'Not Completed'}
-                                                </td>
-                                            );
-                                        })}
-                                    </tr>
-                                    <tr>
-                                        <td colSpan={2}><strong>Supervised By</strong></td>
-                                        {report.columns.map((col) => (
-                                            <td key={`${getColumnKey(col)}-print-supervisor`}>
-                                                {report.supervisedBy[getColumnKey(col)] || '-'}
-                                            </td>
-                                        ))}
-                                    </tr>
-                                    <tr className="signature-row">
-                                        <td colSpan={2}><strong>Teacher Signature</strong></td>
-                                        {report.columns.map((col, idx) => (<td key={idx}></td>))}
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
                     </CardContent>
                 </Card>
             )}
-        </div>
+
+            {/* Print View - Hidden on screen, separate from Card */}
+            {report && report.columns.length > 0 && (
+                <div className="hidden print:block">
+                    {/* Letterhead */}
+                    <div className="w-full mb-2">
+                        <Image
+                            src={letterhead}
+                            alt="SGI Letterhead"
+                            width={600}
+                            height={80}
+                            className="h-auto mx-auto"
+                            style={{ width: '60%' }}
+                            priority
+                        />
+                    </div>
+                    <div style={{ textAlign: 'center', marginBottom: '10px', fontSize: '12px' }}>
+                        <b>
+                            IAMC Supervision Report<br />
+                            Department: {report.department.name} ({report.department.shortName})<br />
+                            Semester: {report.semester.name}
+                        </b>
+                    </div>
+
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10px' }}>
+                        <thead>
+                            <tr>
+                                <th rowSpan={4} style={{ border: '1px solid black', padding: '4px' }}>Sr.No.</th>
+                                <th rowSpan={4} style={{ border: '1px solid black', padding: '4px' }}>Index</th>
+                            </tr>
+                            <tr>
+                                {report.columns.map((col) => (
+                                    <th key={`print-name-${getColumnKey(col)}`} style={{ border: '1px solid black', padding: '4px' }}>
+                                        {col.teacherShortName || col.teacherName}
+                                    </th>
+                                ))}
+                            </tr>
+                            <tr>
+                                {report.columns.map((col) => (
+                                    <th key={`print-subject-${getColumnKey(col)}`} style={{ border: '1px solid black', padding: '4px' }}>
+                                        {col.subjectCode || col.subjectName}
+                                    </th>
+                                ))}
+                            </tr>
+                            <tr>
+                                {report.columns.map((col) => (
+                                    <th key={`print-class-${getColumnKey(col)}`} style={{ border: '1px solid black', padding: '4px' }}>
+                                        {col.className || '-'}
+                                    </th>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {report.rows.map((row) => (
+                                <tr key={row.pointId}>
+                                    <td style={{ border: '1px solid black', padding: '4px', textAlign: 'center' }}>{row.srNo}</td>
+                                    <td style={{ border: '1px solid black', padding: '4px', textAlign: 'left' }}>{row.pointName}</td>
+                                    {report.columns.map((col) => (
+                                        <td
+                                            key={getColumnKey(col)}
+                                            style={{
+                                                border: '1px solid black',
+                                                padding: '4px',
+                                                textAlign: 'center',
+                                                backgroundColor: row.values[getColumnKey(col)] === 'na' ? '#e9ecef' : 'transparent'
+                                            }}
+                                        >
+                                            {getStatusText(row.values[getColumnKey(col)])}
+                                        </td>
+                                    ))}
+                                </tr>
+                            ))}
+                            <tr>
+                                <td colSpan={2} style={{ border: '1px solid black', padding: '4px', fontWeight: 'bold' }}>Status</td>
+                                {report.columns.map((col) => {
+                                    const completed = isColumnCompleted(col);
+                                    return (
+                                        <td
+                                            key={`${getColumnKey(col)}-status`}
+                                            style={{
+                                                border: '1px solid black',
+                                                padding: '4px',
+                                                textAlign: 'center',
+                                                backgroundColor: completed ? '#d4edda' : '#f8d7da'
+                                            }}
+                                        >
+                                            {completed ? 'Completed' : 'Not Completed'}
+                                        </td>
+                                    );
+                                })}
+                            </tr>
+                            <tr>
+                                <td colSpan={2} style={{ border: '1px solid black', padding: '4px', fontWeight: 'bold' }}>Supervised By</td>
+                                {report.columns.map((col) => (
+                                    <td key={`${getColumnKey(col)}-print-supervisor`} style={{ border: '1px solid black', padding: '4px', textAlign: 'center' }}>
+                                        {report.supervisedBy[getColumnKey(col)] || '-'}
+                                    </td>
+                                ))}
+                            </tr>
+                            <tr>
+                                <td colSpan={2} style={{ border: '1px solid black', padding: '4px', fontWeight: 'bold' }}>Teacher Signature</td>
+                                {report.columns.map((col, idx) => (
+                                    <td key={idx} style={{ border: '1px solid black', padding: '4px', height: '40px' }}></td>
+                                ))}
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    {/* Checked by section */}
+                    <div style={{ marginTop: '20px', textAlign: 'right', fontSize: '11px' }}>
+                        <p><strong>Checked By:</strong> {report.coordinator?.name || '_________________'}</p>
+                        <p>IAMP Coordinator</p>
+                    </div>
+                </div>
+            )}
+
+            {/* Print styles */}
+            <style jsx global>{`
+                @media print {
+                    body {
+                        print-color-adjust: exact;
+                        -webkit-print-color-adjust: exact;
+                    }
+                    
+                    @page {
+                        margin: 0.5cm;
+                        size: A4 landscape;
+                    }
+                }
+            `}</style>
+        </div >
     );
 }
