@@ -267,6 +267,7 @@ function LetterContent({ data }: { data: LetterData }) {
             <div className="mb-4">
                 <p>To,</p>
                 <p className="font-bold">{data.teacher.name}</p>
+                <p>Lecturer, {data.teacher.department}</p>
                 <p>SGI, Atigre.</p>
             </div>
 

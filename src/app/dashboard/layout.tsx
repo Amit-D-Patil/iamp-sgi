@@ -2,6 +2,7 @@
 
 import { signOut, useSession } from 'next-auth/react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { ReactNode, useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -12,6 +13,7 @@ import {
     SheetTitle,
     SheetTrigger,
 } from '@/components/ui/sheet';
+import logo from '@/assets/logo.png';
 
 interface DashboardLayoutProps {
     children: ReactNode;
@@ -36,8 +38,8 @@ const allLinks: NavLink[] = [
     { href: '/dashboard/feedback-sessions', label: 'Feedback Sessions', roles: ['feedback_coordinator'] },
     { href: '/dashboard/feedback-reports', label: 'Feedback Reports', roles: ['feedback_coordinator', 'principal'] },
     { href: '/dashboard/text-comments', label: 'Text Comments', roles: ['super_admin', 'principal'] },
-    { href: '/dashboard/supervision', label: 'Supervision', roles: ['iamp_coordinator'] },
-    { href: '/dashboard/reports', label: 'IAMC Reports', roles: ['super_admin', 'iamp_coordinator', 'principal', 'hod'] },
+    { href: '/dashboard/supervision', label: 'IAMC Supervision', roles: ['iamp_coordinator'] },
+    { href: '/dashboard/reports', label: 'IAMC Reports', roles: ['super_admin', 'iamp_coordinator'] },
 ];
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
@@ -52,7 +54,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     return (
         <div className="min-h-screen bg-background">
             {/* Header */}
-            <header className="border-b sticky top-0 bg-background z-50 print:hidden">
+            <header className="border-b sticky top-0 bg-background z-50 print:hidden border-primary/20">
                 <div className="max-w-7xl mx-auto flex h-14 items-center px-4 md:px-6 gap-4 md:gap-6">
                     {/* Mobile Menu Button */}
                     <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
@@ -81,10 +83,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                                 <SheetTitle>
                                     <Link
                                         href="/dashboard"
-                                        className="font-semibold text-lg"
+                                        className="flex items-center gap-2"
                                         onClick={() => setMobileMenuOpen(false)}
                                     >
-                                        IAMC SGI
+                                        <Image
+                                            src={logo}
+                                            alt="SGI Logo"
+                                            width={32}
+                                            height={32}
+                                            className="rounded"
+                                        />
+                                        <span className="font-semibold text-lg text-primary">IAMC SGI</span>
                                     </Link>
                                 </SheetTitle>
                             </SheetHeader>
@@ -95,8 +104,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                                             key={link.href}
                                             href={link.href}
                                             onClick={() => setMobileMenuOpen(false)}
-                                            className={`px-3 py-2 rounded-md text-sm transition-colors hover:bg-muted ${pathname === link.href
-                                                ? 'bg-muted font-medium'
+                                            className={`px-3 py-2 rounded-md text-sm transition-colors hover:bg-primary/10 ${pathname === link.href
+                                                ? 'bg-primary/10 font-medium text-primary'
                                                 : 'text-muted-foreground'
                                                 }`}
                                         >
@@ -111,7 +120,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                                     <Button
                                         variant="outline"
                                         size="sm"
-                                        className="w-full"
+                                        className="w-full border-primary/30 hover:bg-primary/10"
                                         onClick={() => signOut({ callbackUrl: '/login' })}
                                     >
                                         Logout
@@ -122,8 +131,15 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                     </Sheet>
 
                     {/* Logo */}
-                    <Link href="/dashboard" className="font-semibold shrink-0">
-                        IAMC SGI
+                    <Link href="/dashboard" className="flex items-center gap-2 shrink-0">
+                        <Image
+                            src={logo}
+                            alt="SGI Logo"
+                            width={32}
+                            height={32}
+                            className="rounded"
+                        />
+                        <span className="font-semibold text-primary hidden sm:inline">IAMC SGI</span>
                     </Link>
 
                     {/* Desktop Navigation */}
@@ -132,8 +148,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                             <Link
                                 key={link.href}
                                 href={link.href}
-                                className={`text-sm transition-colors hover:text-foreground whitespace-nowrap ${pathname === link.href
-                                    ? 'text-foreground font-medium'
+                                className={`text-sm transition-colors hover:text-primary whitespace-nowrap ${pathname === link.href
+                                    ? 'text-primary font-medium'
                                     : 'text-muted-foreground'
                                     }`}
                             >
@@ -150,6 +166,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                         <Button
                             variant="outline"
                             size="sm"
+                            className="border-primary/30 hover:bg-primary/10 hover:text-primary"
                             onClick={() => signOut({ callbackUrl: '/login' })}
                         >
                             Logout
