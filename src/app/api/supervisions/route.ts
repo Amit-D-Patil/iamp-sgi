@@ -4,11 +4,13 @@ import Supervision from '@/models/Supervision';
 import Semester from '@/models/Semester';
 import Class from '@/models/Class';
 import User from '@/models/User';
+import IAMPPoint from '@/models/IAMPPoint';
 import { auth } from '@/lib/auth';
 
 // Ensure models are registered
 Semester;
 Class;
+IAMPPoint;
 
 // Get supervisions
 export async function GET(request: NextRequest) {
