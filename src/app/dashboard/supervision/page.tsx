@@ -365,18 +365,18 @@ export default function SupervisionPage() {
                 </CardContent>
             </Card>
 
-            {/* IAMP Points */}
+            {/* IAMC Points */}
             {selectedSemester && selectedMapping ? (
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-lg">
-                            IAMP Points
+                            IAMC Points
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
                         {allIampPoints.length === 0 ? (
                             <p className="text-muted-foreground text-center py-4">
-                                No active IAMP points found
+                                No active IAMC points found
                             </p>
                         ) : (
                             <div className="space-y-3">

@@ -9,8 +9,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "IAMP SGI - Management Portal",
-  description: "IAMP SGI Management Portal for Super Admins and Coordinators",
+  title: "IAMC SGI - Management Portal",
+  description: "IAMC SGI Management Portal",
 };
 
 export default function RootLayout({

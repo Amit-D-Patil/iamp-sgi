@@ -12,7 +12,7 @@ const IAMPPointSchema = new Schema<IIAMPPoint>(
     {
         name: {
             type: String,
-            required: [true, 'IAMP Point name is required'],
+            required: [true, 'IAMC Point name is required'],
             unique: true,
             trim: true,
         },

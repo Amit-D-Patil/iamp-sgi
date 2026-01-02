@@ -19,7 +19,7 @@ IAMPPoint;
 
 const roleLabels: Record<string, string> = {
     super_admin: 'Super Admin',
-    iamp_coordinator: 'IAMP Coordinator',
+    iamp_coordinator: 'IAMC Coordinator',
     feedback_coordinator: 'Feedback Coordinator',
     principal: 'Principal',
     hod: 'Head of Department',
@@ -75,7 +75,7 @@ export default async function DashboardPage() {
                     <Card>
                         <CardHeader className="pb-2">
                             <CardTitle className="text-sm font-medium text-muted-foreground">
-                                IAMP Points
+                                IAMC Points
                             </CardTitle>
                         </CardHeader>
                         <CardContent>

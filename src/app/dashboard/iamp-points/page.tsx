@@ -50,7 +50,7 @@ export default function IAMPPointsPage() {
             const data = await res.json();
             setPoints(data.points || []);
         } catch (error) {
-            console.error('Error fetching IAMP points:', error);
+            console.error('Error fetching IAMC points:', error);
         } finally {
             setIsLoading(false);
         }
@@ -70,7 +70,7 @@ export default function IAMPPointsPage() {
                 fetchPoints();
             }
         } catch (error) {
-            console.error('Error creating IAMP point:', error);
+            console.error('Error creating IAMC point:', error);
         }
     };
 
@@ -88,12 +88,12 @@ export default function IAMPPointsPage() {
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this IAMP point?')) return;
+        if (!confirm('Are you sure you want to delete this IAMC point?')) return;
         try {
             await fetch(`/api/iamp-points/${id}`, { method: 'DELETE' });
             fetchPoints();
         } catch (error) {
-            console.error('Error deleting IAMP point:', error);
+            console.error('Error deleting IAMC point:', error);
         }
     };
 
@@ -104,14 +104,14 @@ export default function IAMPPointsPage() {
     return (
         <div>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-                <h1 className="text-2xl font-bold">IAMP Points</h1>
+                <h1 className="text-2xl font-bold">IAMC Points</h1>
                 <Dialog open={isOpen} onOpenChange={setIsOpen}>
                     <DialogTrigger asChild>
-                        <Button>Add IAMP Point</Button>
+                        <Button>Add IAMC Point</Button>
                     </DialogTrigger>
                     <DialogContent>
                         <DialogHeader>
-                            <DialogTitle>Add New IAMP Point</DialogTitle>
+                            <DialogTitle>Add New IAMC Point</DialogTitle>
                         </DialogHeader>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="space-y-2">
@@ -134,11 +134,11 @@ export default function IAMPPointsPage() {
                                     onChange={(e) =>
                                         setFormData({ ...formData, description: e.target.value })
                                     }
-                                    placeholder="Brief description of this IAMP point"
+                                    placeholder="Brief description of this IAMC point"
                                 />
                             </div>
                             <Button type="submit" className="w-full">
-                                Create IAMP Point
+                                Create IAMC Point
                             </Button>
                         </form>
                     </DialogContent>
@@ -160,7 +160,7 @@ export default function IAMPPointsPage() {
                         {points.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={5} className="text-center text-muted-foreground">
-                                    No IAMP points found
+                                    No IAMC points found
                                 </TableCell>
                             </TableRow>
                         ) : (

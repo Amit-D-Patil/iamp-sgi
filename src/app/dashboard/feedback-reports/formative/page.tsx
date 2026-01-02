@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
+import letterhead from '@/assets/letterhead.jpg';
 import {
     Table,
     TableBody,
@@ -228,77 +230,6 @@ export default function FeedbackReportsPage() {
                     </div>
 
                     {/* ====== PRINT VIEW - PHP Style ====== */}
-                    <div className="print-only" style={{ width: '100%', maxWidth: '950px' }}>
-                        {filteredReports.map((report, reportIndex) => (
-                            <div key={report.teacher._id} className="faculty-page" style={{ pageBreakBefore: reportIndex > 0 ? 'always' : 'auto' }}>
-                                {/* Header with border bottom */}
-                                <div style={{ width: '100%', borderBottom: '1px solid black', paddingBottom: '10px', marginBottom: '10px' }}>
-                                    <div style={{ textAlign: 'center' }}>
-                                        <b>
-                                            Sou. Sushila Danchand Ghodawat Charitable Trust&apos;s<br />
-                                            Sanjay Ghodawat Institute<br />
-                                            Formative Feedback {getMonthYear()}<br />
-                                            Performance Appraisal by Students Year: {getAcademicYear()}
-                                        </b>
-                                    </div>
-                                </div>
-
-                                {/* Faculty Name */}
-                                <div style={{ marginTop: '5px', width: '100%' }}>
-                                    <b style={{ marginLeft: '5px' }}>Faculty Name: {report.teacher.name}</b>
-                                    <br /><br />
-
-                                    {/* Report Table */}
-                                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
-                                        <thead>
-                                            <tr>
-                                                <th style={{ border: '1px solid black', padding: '5px', width: '12%' }}>Class</th>
-                                                <th style={{ border: '1px solid black', padding: '5px', width: '15%' }}>Subject</th>
-                                                <th style={{ border: '1px solid black', padding: '5px', width: '10%' }}>Type</th>
-                                                {questions.map((q, idx) => (
-                                                    <th key={q._id} style={{ border: '1px solid black', padding: '5px', width: '6%' }}>
-                                                        Q{idx + 1}
-                                                    </th>
-                                                ))}
-                                                <th style={{ border: '1px solid black', padding: '5px', width: '6%' }}>Avg</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {report.rows.map((row, idx) => (
-                                                <tr key={idx}>
-                                                    <td style={{ border: '1px solid black', padding: '5px' }}>{row.class}</td>
-                                                    <td style={{ border: '1px solid black', padding: '5px' }}>{row.subject}</td>
-                                                    <td style={{ border: '1px solid black', padding: '5px' }}>
-                                                        {typeLabels[row.teachingType] || row.teachingType}
-                                                    </td>
-                                                    {questions.map((q) => {
-                                                        const qAvg = row.questionAverages.find(qa => qa.questionId === q._id);
-                                                        return (
-                                                            <td key={q._id} style={{ border: '1px solid black', padding: '5px', textAlign: 'center' }}>
-                                                                {qAvg?.average ? qAvg.average.toFixed(2) : '-'}
-                                                            </td>
-                                                        );
-                                                    })}
-                                                    <td style={{ border: '1px solid black', padding: '5px', textAlign: 'center', fontWeight: 'bold' }}>
-                                                        {row.overallAverage.toFixed(2)}
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-
-                                    {/* Signature Section */}
-                                    <div style={{ height: '115px', textAlign: 'left' }}>
-                                        <br /><br /><br />
-                                        <div style={{ marginRight: '85px', textAlign: 'right' }}>
-                                            HOD sign
-                                        </div>
-                                        <hr style={{ border: 'none', borderTop: '1px dashed black' }} />
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
                 </>
             )}
 
@@ -321,8 +252,8 @@ export default function FeedbackReportsPage() {
                     /* Show print elements */
                     .print-only {
                         display: block !important;
-                    }
-                    
+                        }
+                        
                     /* Hide navigation */
                     nav, aside, header {
                         display: none !important;
@@ -345,6 +276,83 @@ export default function FeedbackReportsPage() {
                     }
                 }
             `}</style>
+            <div className="print-only" style={{ width: '100%', maxWidth: '950px' }}>
+                {filteredReports.map((report, reportIndex) => (
+                    <div key={report.teacher._id} className="faculty-page" style={{ pageBreakBefore: reportIndex > 0 ? 'always' : 'auto' }}>
+                        {/* Header with letterhead */}
+                        <div style={{ width: '100%', borderBottom: '1px solid black', paddingBottom: '10px', marginBottom: '10px' }}>
+                            <Image
+                                src={letterhead}
+                                alt="SGI Letterhead"
+                                width={950}
+                                height={150}
+                                style={{ width: '100%', height: 'auto' }}
+                                priority
+                            />
+                            <div style={{ textAlign: 'center', marginTop: '10px' }}>
+                                <b>
+                                    Formative Feedback {getMonthYear()}<br />
+                                    Performance Appraisal by Students Year: {getAcademicYear()}
+                                </b>
+                            </div>
+                        </div>
+
+                        {/* Faculty Name */}
+                        <div style={{ marginTop: '5px', width: '100%' }}>
+                            <b style={{ marginLeft: '5px' }}>Faculty Name: {report.teacher.name}</b>
+                            <br /><br />
+
+                            {/* Report Table */}
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '12px' }}>
+                                <thead>
+                                    <tr>
+                                        <th style={{ border: '1px solid black', padding: '5px', width: '12%' }}>Class</th>
+                                        <th style={{ border: '1px solid black', padding: '5px', width: '15%' }}>Subject</th>
+                                        <th style={{ border: '1px solid black', padding: '5px', width: '10%' }}>Type</th>
+                                        {questions.map((q, idx) => (
+                                            <th key={q._id} style={{ border: '1px solid black', padding: '5px', width: '6%' }}>
+                                                Q{idx + 1}
+                                            </th>
+                                        ))}
+                                        <th style={{ border: '1px solid black', padding: '5px', width: '6%' }}>Avg</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {report.rows.map((row, idx) => (
+                                        <tr key={idx}>
+                                            <td style={{ border: '1px solid black', padding: '5px' }}>{row.class}</td>
+                                            <td style={{ border: '1px solid black', padding: '5px' }}>{row.subject}</td>
+                                            <td style={{ border: '1px solid black', padding: '5px' }}>
+                                                {typeLabels[row.teachingType] || row.teachingType}
+                                            </td>
+                                            {questions.map((q) => {
+                                                const qAvg = row.questionAverages.find(qa => qa.questionId === q._id);
+                                                return (
+                                                    <td key={q._id} style={{ border: '1px solid black', padding: '5px', textAlign: 'center' }}>
+                                                        {qAvg?.average ? qAvg.average.toFixed(2) : '-'}
+                                                    </td>
+                                                );
+                                            })}
+                                            <td style={{ border: '1px solid black', padding: '5px', textAlign: 'center', fontWeight: 'bold' }}>
+                                                {row.overallAverage.toFixed(2)}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+
+                            {/* Signature Section */}
+                            <div style={{ height: '115px', textAlign: 'left' }}>
+                                <br /><br /><br />
+                                <div style={{ marginRight: '85px', textAlign: 'right' }}>
+                                    HOD sign
+                                </div>
+                                <hr style={{ border: 'none', borderTop: '1px dashed black' }} />
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
         </div>
     );
 }

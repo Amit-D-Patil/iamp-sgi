@@ -47,7 +47,7 @@ interface User {
 
 const roleLabels: Record<string, string> = {
     super_admin: 'Super Admin',
-    iamp_coordinator: 'IAMP Coordinator',
+    iamp_coordinator: 'IAMC Coordinator',
     feedback_coordinator: 'Feedback Coordinator',
     principal: 'Principal',
     hod: 'HOD',
