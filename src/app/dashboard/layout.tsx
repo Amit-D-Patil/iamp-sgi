@@ -35,7 +35,7 @@ const allLinks: NavLink[] = [
     { href: '/dashboard/classes', label: 'Classes', roles: ['iamp_coordinator', 'feedback_coordinator'] },
     { href: '/dashboard/subjects', label: 'Subjects', roles: ['iamp_coordinator', 'feedback_coordinator'] },
     { href: '/dashboard/teachers', label: 'Teachers', roles: ['iamp_coordinator', 'feedback_coordinator'] },
-    { href: '/dashboard/feedback-sessions', label: 'Feedback Sessions', roles: ['feedback_coordinator'] },
+    { href: '/dashboard/feedback-sessions', label: 'Feedback Sessions', roles: ['super_admin'] },
     { href: '/dashboard/feedback-reports', label: 'Feedback Reports', roles: ['feedback_coordinator', 'principal'] },
     { href: '/dashboard/text-comments', label: 'Text Comments', roles: ['super_admin', 'principal'] },
     { href: '/dashboard/supervision', label: 'IAMC Supervision', roles: ['iamp_coordinator'] },

@@ -8,8 +8,8 @@ import { auth } from '@/lib/auth';
 // Ensure Department model is registered
 Department;
 
-// Get classes for coordinator's department
-export async function GET() {
+// Get classes for coordinator's department or by department param for super_admin
+export async function GET(request: NextRequest) {
     try {
         const session = await auth();
         if (!session) {
@@ -18,13 +18,31 @@ export async function GET() {
 
         await connectDB();
 
-        // Get user's department
-        const user = await User.findById(session.user.id);
-        if (!user?.department) {
-            return NextResponse.json({ error: 'No department assigned' }, { status: 400 });
+        const { searchParams } = new URL(request.url);
+        const departmentParam = searchParams.get('department');
+
+        let departmentId: string;
+
+        // Super admin can fetch classes for any department
+        if (session.user.role === 'super_admin') {
+            if (!departmentParam) {
+                // Return all classes if no department specified
+                const classes = await Class.find({})
+                    .populate('department', 'name shortName')
+                    .sort({ year: 1, division: 1 });
+                return NextResponse.json({ classes }, { status: 200 });
+            }
+            departmentId = departmentParam;
+        } else {
+            // Get user's department for coordinators
+            const user = await User.findById(session.user.id);
+            if (!user?.department) {
+                return NextResponse.json({ error: 'No department assigned' }, { status: 400 });
+            }
+            departmentId = user.department.toString();
         }
 
-        const classes = await Class.find({ department: user.department })
+        const classes = await Class.find({ department: departmentId })
             .populate('department', 'name shortName')
             .sort({ year: 1, division: 1 });
 

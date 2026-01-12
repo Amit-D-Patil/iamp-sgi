@@ -11,25 +11,28 @@ export async function PATCH(
 ) {
     try {
         const session = await auth();
-        if (!session || session.user.role !== 'feedback_coordinator') {
+        if (!session || !['super_admin', 'feedback_coordinator'].includes(session.user.role)) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
 
         await connectDB();
 
-        const user = await User.findById(session.user.id);
-        if (!user?.department) {
-            return NextResponse.json({ error: 'No department assigned' }, { status: 400 });
-        }
-
         const { id } = await params;
         const body = await request.json();
 
-        // Ensure session belongs to user's department
-        const existingSession = await FeedbackSession.findOne({
-            _id: id,
-            department: user.department,
-        });
+        let query: { _id: string; department?: string } = { _id: id };
+
+        // Non-super_admin must belong to the same department
+        if (session.user.role !== 'super_admin') {
+            const user = await User.findById(session.user.id);
+            if (!user?.department) {
+                return NextResponse.json({ error: 'No department assigned' }, { status: 400 });
+            }
+            query.department = user.department.toString();
+        }
+
+        // Ensure session exists (and belongs to user's department if not super_admin)
+        const existingSession = await FeedbackSession.findOne(query);
 
         if (!existingSession) {
             return NextResponse.json({ error: 'Session not found' }, { status: 404 });
@@ -57,25 +60,15 @@ export async function DELETE(
 ) {
     try {
         const session = await auth();
-        if (!session || session.user.role !== 'feedback_coordinator') {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+        if (!session || session.user.role !== 'super_admin') {
+            return NextResponse.json({ error: 'Unauthorized - Only super admin can delete sessions' }, { status: 403 });
         }
 
         await connectDB();
 
-        const user = await User.findById(session.user.id);
-        if (!user?.department) {
-            return NextResponse.json({ error: 'No department assigned' }, { status: 400 });
-        }
-
         const { id } = await params;
 
-        // Ensure session belongs to user's department
-        const feedbackSession = await FeedbackSession.findOne({
-            _id: id,
-            department: user.department,
-        });
-
+        const feedbackSession = await FeedbackSession.findById(id);
         if (!feedbackSession) {
             return NextResponse.json({ error: 'Session not found' }, { status: 404 });
         }

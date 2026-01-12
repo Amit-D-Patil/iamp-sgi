@@ -12,7 +12,7 @@ import { nanoid } from 'nanoid';
 Class;
 FeedbackResponse;
 
-// Get feedback sessions for coordinator's department
+// Get feedback sessions - super_admin sees all, coordinators see their department
 export async function GET() {
     try {
         const session = await auth();
@@ -22,12 +22,18 @@ export async function GET() {
 
         await connectDB();
 
-        const user = await User.findById(session.user.id);
-        if (!user?.department) {
-            return NextResponse.json({ error: 'No department assigned' }, { status: 400 });
+        let query = {};
+
+        // Super admin can see all sessions, coordinators see only their department
+        if (session.user.role !== 'super_admin') {
+            const user = await User.findById(session.user.id);
+            if (!user?.department) {
+                return NextResponse.json({ error: 'No department assigned' }, { status: 400 });
+            }
+            query = { department: user.department };
         }
 
-        const sessions = await FeedbackSession.find({ department: user.department })
+        const sessions = await FeedbackSession.find(query)
             .populate('class', 'displayName year division')
             .sort({ createdAt: -1 });
 
@@ -53,16 +59,11 @@ export async function GET() {
 export async function POST(request: NextRequest) {
     try {
         const session = await auth();
-        if (!session || session.user.role !== 'feedback_coordinator') {
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
+        if (!session || session.user.role !== 'super_admin') {
+            return NextResponse.json({ error: 'Unauthorized - Only super admin can create feedback sessions' }, { status: 403 });
         }
 
         await connectDB();
-
-        const user = await User.findById(session.user.id);
-        if (!user?.department) {
-            return NextResponse.json({ error: 'No department assigned' }, { status: 400 });
-        }
 
         const body = await request.json();
         const { classId, studentCount } = body;
@@ -74,8 +75,8 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Verify class belongs to user's department
-        const classDoc = await Class.findOne({ _id: classId, department: user.department });
+        // Get class to find its department
+        const classDoc = await Class.findById(classId);
         if (!classDoc) {
             return NextResponse.json({ error: 'Class not found' }, { status: 404 });
         }
@@ -94,7 +95,7 @@ export async function POST(request: NextRequest) {
 
         const feedbackSession = await FeedbackSession.create({
             class: classId,
-            department: user.department,
+            department: classDoc.department,
             studentCount,
             uniqueCode,
             createdBy: session.user.id,

@@ -30,6 +30,12 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
+interface Department {
+    _id: string;
+    name: string;
+    shortName: string;
+}
+
 interface ClassItem {
     _id: string;
     displayName: string;
@@ -48,10 +54,12 @@ interface FeedbackSession {
 
 export default function FeedbackSessionsPage() {
     const [sessions, setSessions] = useState<FeedbackSession[]>([]);
+    const [departments, setDepartments] = useState<Department[]>([]);
     const [classes, setClasses] = useState<ClassItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isOpen, setIsOpen] = useState(false);
     const [formData, setFormData] = useState({
+        departmentId: '',
         classId: '',
         studentCount: '',
     });
@@ -60,21 +68,41 @@ export default function FeedbackSessionsPage() {
         fetchData();
     }, []);
 
+    // Fetch classes when department changes
+    useEffect(() => {
+        if (formData.departmentId) {
+            fetchClassesForDepartment(formData.departmentId);
+        } else {
+            setClasses([]);
+        }
+    }, [formData.departmentId]);
+
     const fetchData = async () => {
         try {
-            const [sessionsRes, classesRes] = await Promise.all([
+            const [sessionsRes, departmentsRes] = await Promise.all([
                 fetch('/api/feedback-sessions'),
-                fetch('/api/classes'),
+                fetch('/api/departments'),
             ]);
             const sessionsData = await sessionsRes.json();
-            const classesData = await classesRes.json();
+            const departmentsData = await departmentsRes.json();
 
             setSessions(sessionsData.sessions || []);
-            setClasses(classesData.classes?.filter((c: ClassItem & { isActive: boolean }) => c.isActive) || []);
+            setDepartments(departmentsData.departments || []);
         } catch (error) {
             console.error('Error fetching data:', error);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const fetchClassesForDepartment = async (departmentId: string) => {
+        try {
+            const res = await fetch(`/api/classes?department=${departmentId}`);
+            const data = await res.json();
+            setClasses(data.classes?.filter((c: ClassItem & { isActive: boolean }) => c.isActive) || []);
+        } catch (error) {
+            console.error('Error fetching classes:', error);
+            setClasses([]);
         }
     };
 
@@ -91,7 +119,7 @@ export default function FeedbackSessionsPage() {
             });
             if (res.ok) {
                 setIsOpen(false);
-                setFormData({ classId: '', studentCount: '' });
+                setFormData({ departmentId: '', classId: '', studentCount: '' });
                 fetchData();
             } else {
                 const data = await res.json();
@@ -154,15 +182,36 @@ export default function FeedbackSessionsPage() {
                         </DialogHeader>
                         <form onSubmit={handleSubmit} className="space-y-4">
                             <div className="space-y-2">
+                                <Label htmlFor="department">Select Department</Label>
+                                <Select
+                                    value={formData.departmentId}
+                                    onValueChange={(value) =>
+                                        setFormData({ ...formData, departmentId: value, classId: '' })
+                                    }
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select department" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {departments.map((dept) => (
+                                            <SelectItem key={dept._id} value={dept._id}>
+                                                {dept.name} ({dept.shortName})
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
                                 <Label htmlFor="class">Select Class</Label>
                                 <Select
                                     value={formData.classId}
                                     onValueChange={(value) =>
                                         setFormData({ ...formData, classId: value })
                                     }
+                                    disabled={!formData.departmentId}
                                 >
                                     <SelectTrigger>
-                                        <SelectValue placeholder="Select class" />
+                                        <SelectValue placeholder={formData.departmentId ? "Select class" : "Select department first"} />
                                     </SelectTrigger>
                                     <SelectContent>
                                         {classes.map((cls) => (
