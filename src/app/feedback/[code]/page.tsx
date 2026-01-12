@@ -34,6 +34,7 @@ interface Question {
     text: string;
     type: 'abcd_grade' | 'text' | 'yes_no';
     category?: string;
+    isRequired?: boolean;
 }
 
 interface SessionInfo {
@@ -141,7 +142,16 @@ export default function FeedbackPage({ params }: { params: Promise<{ code: strin
     const isQuestionComplete = () => {
         if (!currentQuestion) return false;
         const response = responses[currentQuestion._id];
-        if (!response) return currentQuestion.type === 'text';
+
+        if (currentQuestion.type === 'text') {
+            // Text questions: only required if isRequired is true
+            if (currentQuestion.isRequired) {
+                return response?.textResponse && response.textResponse.trim().length > 0;
+            }
+            return true; // Optional text questions are always "complete"
+        }
+
+        if (!response) return false;
 
         if (currentQuestion.type === 'abcd_grade') {
             if (!response.teacherResponses) return false;
@@ -472,13 +482,20 @@ export default function FeedbackPage({ params }: { params: Promise<{ code: strin
                             )}
 
                             {currentQuestion.type === 'text' && (
-                                <Textarea
-                                    placeholder="Enter your response (optional)..."
-                                    value={responses[currentQuestion._id]?.textResponse || ''}
-                                    onChange={(e) => handleTextChange(e.target.value)}
-                                    rows={5}
-                                    className="border-gray-300 focus:border-red-500 focus:ring-red-500"
-                                />
+                                <div className="space-y-2">
+                                    {currentQuestion.isRequired && (
+                                        <p className="text-sm text-red-600 font-medium">
+                                            * This question is required
+                                        </p>
+                                    )}
+                                    <Textarea
+                                        placeholder={currentQuestion.isRequired ? "Enter your response..." : "Enter your response (optional)..."}
+                                        value={responses[currentQuestion._id]?.textResponse || ''}
+                                        onChange={(e) => handleTextChange(e.target.value)}
+                                        rows={5}
+                                        className="border-gray-300 focus:border-red-500 focus:ring-red-500"
+                                    />
+                                </div>
                             )}
 
                             {currentQuestion.type === 'yes_no' && (

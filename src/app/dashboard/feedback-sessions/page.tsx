@@ -43,7 +43,11 @@ interface ClassItem {
 
 interface FeedbackSession {
     _id: string;
-    class: { _id: string; displayName: string };
+    class: {
+        _id: string;
+        displayName: string;
+        department?: { shortName: string };
+    };
     studentCount: number;
     uniqueCode: string;
     isActive: boolean;
@@ -58,6 +62,7 @@ export default function FeedbackSessionsPage() {
     const [classes, setClasses] = useState<ClassItem[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isOpen, setIsOpen] = useState(false);
+    const [filterDepartment, setFilterDepartment] = useState<string>('all');
     const [formData, setFormData] = useState({
         departmentId: '',
         classId: '',
@@ -65,10 +70,16 @@ export default function FeedbackSessionsPage() {
     });
 
     useEffect(() => {
-        fetchData();
+        fetchDepartments();
+        fetchSessions();
     }, []);
 
-    // Fetch classes when department changes
+    // Refetch sessions when filter changes
+    useEffect(() => {
+        fetchSessions();
+    }, [filterDepartment]);
+
+    // Fetch classes when department changes in form
     useEffect(() => {
         if (formData.departmentId) {
             fetchClassesForDepartment(formData.departmentId);
@@ -77,22 +88,34 @@ export default function FeedbackSessionsPage() {
         }
     }, [formData.departmentId]);
 
-    const fetchData = async () => {
+    const fetchDepartments = async () => {
         try {
-            const [sessionsRes, departmentsRes] = await Promise.all([
-                fetch('/api/feedback-sessions'),
-                fetch('/api/departments'),
-            ]);
-            const sessionsData = await sessionsRes.json();
-            const departmentsData = await departmentsRes.json();
-
-            setSessions(sessionsData.sessions || []);
-            setDepartments(departmentsData.departments || []);
+            const res = await fetch('/api/departments');
+            const data = await res.json();
+            setDepartments(data.departments || []);
         } catch (error) {
-            console.error('Error fetching data:', error);
+            console.error('Error fetching departments:', error);
+        }
+    };
+
+    const fetchSessions = async () => {
+        try {
+            const params = new URLSearchParams();
+            if (filterDepartment !== 'all') {
+                params.set('department', filterDepartment);
+            }
+            const res = await fetch(`/api/feedback-sessions?${params.toString()}`);
+            const data = await res.json();
+            setSessions(data.sessions || []);
+        } catch (error) {
+            console.error('Error fetching sessions:', error);
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const fetchData = async () => {
+        await fetchSessions();
     };
 
     const fetchClassesForDepartment = async (departmentId: string) => {
@@ -172,88 +195,107 @@ export default function FeedbackSessionsPage() {
                         Create and manage student feedback collection
                     </p>
                 </div>
-                <Dialog open={isOpen} onOpenChange={setIsOpen}>
-                    <DialogTrigger asChild>
-                        <Button>Start New Feedback</Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Start Feedback Collection</DialogTitle>
-                        </DialogHeader>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div className="space-y-2">
-                                <Label htmlFor="department">Select Department</Label>
-                                <Select
-                                    value={formData.departmentId}
-                                    onValueChange={(value) =>
-                                        setFormData({ ...formData, departmentId: value, classId: '' })
-                                    }
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                    {/* Department Filter */}
+                    <div className="flex items-center gap-2">
+                        <Label className="shrink-0 text-sm">Department:</Label>
+                        <Select value={filterDepartment} onValueChange={setFilterDepartment}>
+                            <SelectTrigger className="w-48">
+                                <SelectValue placeholder="Select department" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Departments</SelectItem>
+                                {departments.map((dept) => (
+                                    <SelectItem key={dept._id} value={dept._id}>
+                                        {dept.name} ({dept.shortName})
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+                        <DialogTrigger asChild>
+                            <Button>Start New Feedback</Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Start Feedback Collection</DialogTitle>
+                            </DialogHeader>
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                                <div className="space-y-2">
+                                    <Label htmlFor="department">Select Department</Label>
+                                    <Select
+                                        value={formData.departmentId}
+                                        onValueChange={(value) =>
+                                            setFormData({ ...formData, departmentId: value, classId: '' })
+                                        }
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select department" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {departments.map((dept) => (
+                                                <SelectItem key={dept._id} value={dept._id}>
+                                                    {dept.name} ({dept.shortName})
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="class">Select Class</Label>
+                                    <Select
+                                        value={formData.classId}
+                                        onValueChange={(value) =>
+                                            setFormData({ ...formData, classId: value })
+                                        }
+                                        disabled={!formData.departmentId}
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder={formData.departmentId ? "Select class" : "Select department first"} />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {classes.map((cls) => (
+                                                <SelectItem key={cls._id} value={cls._id}>
+                                                    {cls.displayName}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="studentCount">Number of Students</Label>
+                                    <Input
+                                        id="studentCount"
+                                        type="number"
+                                        min="1"
+                                        value={formData.studentCount}
+                                        onChange={(e) =>
+                                            setFormData({ ...formData, studentCount: e.target.value })
+                                        }
+                                        placeholder="e.g., 60"
+                                        required
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                        Maximum number of feedback responses allowed
+                                    </p>
+                                </div>
+                                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                    <p className="text-xs text-yellow-800">
+                                        <strong>Note:</strong> Make sure batches are created for the selected class before starting feedback. Without batches, students won&apos;t be able to submit feedback.
+                                    </p>
+                                </div>
+                                <Button
+                                    type="submit"
+                                    className="w-full"
+                                    disabled={!formData.classId || !formData.studentCount}
                                 >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder="Select department" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {departments.map((dept) => (
-                                            <SelectItem key={dept._id} value={dept._id}>
-                                                {dept.name} ({dept.shortName})
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="class">Select Class</Label>
-                                <Select
-                                    value={formData.classId}
-                                    onValueChange={(value) =>
-                                        setFormData({ ...formData, classId: value })
-                                    }
-                                    disabled={!formData.departmentId}
-                                >
-                                    <SelectTrigger>
-                                        <SelectValue placeholder={formData.departmentId ? "Select class" : "Select department first"} />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {classes.map((cls) => (
-                                            <SelectItem key={cls._id} value={cls._id}>
-                                                {cls.displayName}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                            <div className="space-y-2">
-                                <Label htmlFor="studentCount">Number of Students</Label>
-                                <Input
-                                    id="studentCount"
-                                    type="number"
-                                    min="1"
-                                    value={formData.studentCount}
-                                    onChange={(e) =>
-                                        setFormData({ ...formData, studentCount: e.target.value })
-                                    }
-                                    placeholder="e.g., 60"
-                                    required
-                                />
-                                <p className="text-xs text-muted-foreground">
-                                    Maximum number of feedback responses allowed
-                                </p>
-                            </div>
-                            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                                <p className="text-xs text-yellow-800">
-                                    <strong>Note:</strong> Make sure batches are created for the selected class before starting feedback. Without batches, students won&apos;t be able to submit feedback.
-                                </p>
-                            </div>
-                            <Button
-                                type="submit"
-                                className="w-full"
-                                disabled={!formData.classId || !formData.studentCount}
-                            >
-                                Create Feedback Session
-                            </Button>
-                        </form>
-                    </DialogContent>
-                </Dialog>
+                                    Create Feedback Session
+                                </Button>
+                            </form>
+                        </DialogContent>
+                    </Dialog>
+                </div>
             </div>
 
             {sessions.length === 0 ? (
@@ -283,7 +325,9 @@ export default function FeedbackSessionsPage() {
                             {sessions.map((session) => (
                                 <TableRow key={session._id}>
                                     <TableCell className="font-medium">
-                                        {session.class.displayName}
+                                        {session.class.department?.shortName
+                                            ? `${session.class.department.shortName}-${session.class.displayName}`
+                                            : session.class.displayName}
                                     </TableCell>
                                     <TableCell>{session.studentCount}</TableCell>
                                     <TableCell>

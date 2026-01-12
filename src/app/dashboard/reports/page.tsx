@@ -452,7 +452,7 @@ export default function ReportsPage() {
                     {/* Checked by section */}
                     <div style={{ marginTop: '20px', textAlign: 'right', fontSize: '11px' }}>
                         <p><strong>Checked By:</strong> {report.coordinator?.name || '_________________'}</p>
-                        <p>IAMP Coordinator</p>
+                        <p>IAMC Coordinator</p>
                     </div>
                 </div>
             )}

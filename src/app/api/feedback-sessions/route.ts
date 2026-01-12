@@ -12,8 +12,8 @@ import { nanoid } from 'nanoid';
 Class;
 FeedbackResponse;
 
-// Get feedback sessions - super_admin sees all, coordinators see their department
-export async function GET() {
+// Get feedback sessions - super_admin sees all or filtered by department, coordinators see their department
+export async function GET(request: NextRequest) {
     try {
         const session = await auth();
         if (!session) {
@@ -22,19 +22,32 @@ export async function GET() {
 
         await connectDB();
 
-        let query = {};
+        const { searchParams } = new URL(request.url);
+        const departmentParam = searchParams.get('department');
 
-        // Super admin can see all sessions, coordinators see only their department
-        if (session.user.role !== 'super_admin') {
+        let query: { department?: string } = {};
+
+        // Super admin can filter by department or see all
+        if (session.user.role === 'super_admin') {
+            if (departmentParam) {
+                query = { department: departmentParam };
+            }
+            // else: no filter, see all
+        } else {
+            // Coordinators see only their department
             const user = await User.findById(session.user.id);
             if (!user?.department) {
                 return NextResponse.json({ error: 'No department assigned' }, { status: 400 });
             }
-            query = { department: user.department };
+            query = { department: user.department.toString() };
         }
 
         const sessions = await FeedbackSession.find(query)
-            .populate('class', 'displayName year division')
+            .populate({
+                path: 'class',
+                select: 'displayName year division department',
+                populate: { path: 'department', select: 'shortName' }
+            })
             .sort({ createdAt: -1 });
 
         // Get response counts for each session

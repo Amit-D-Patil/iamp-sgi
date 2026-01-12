@@ -44,7 +44,7 @@ export default function LoginPage() {
         <div className="min-h-screen flex items-center justify-center bg-background p-4">
             <Card className="w-full max-w-sm">
                 <CardHeader className="text-center">
-                    <CardTitle className="text-2xl">IAMP SGI</CardTitle>
+                    <CardTitle className="text-2xl">IAMC SGI</CardTitle>
                     <CardDescription>Sign in to your account</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -83,12 +83,6 @@ export default function LoginPage() {
                             {isLoading ? 'Signing in...' : 'Sign In'}
                         </Button>
                     </form>
-
-                    <div className="mt-6 pt-4 border-t text-center text-xs text-muted-foreground">
-                        <p className="mb-1">Demo Credentials:</p>
-                        <p>Admin: 9999999999 / admin123</p>
-                        <p>Coordinator: 8888888888 / coordinator123</p>
-                    </div>
                 </CardContent>
             </Card>
         </div>

@@ -8,8 +8,8 @@ import { auth } from '@/lib/auth';
 // Ensure models are registered
 Department;
 
-// Get teachers for coordinator's department (or all for super_admin/principal)
-export async function GET() {
+// Get teachers for coordinator's department (or all/filtered for super_admin/principal)
+export async function GET(request: NextRequest) {
     try {
         const session = await auth();
         if (!session) {
@@ -18,16 +18,27 @@ export async function GET() {
 
         await connectDB();
 
+        // Get department query param
+        const { searchParams } = new URL(request.url);
+        const departmentParam = searchParams.get('department');
+
         // Get user's department
         const user = await User.findById(session.user.id);
 
-        // Super admin and principal can see all teachers
-        // Others need a department assigned
+        // Super admin and principal can see all teachers or filter by department
         let teachers;
         if (session.user.role === 'super_admin' || session.user.role === 'principal') {
-            teachers = await Teacher.find()
-                .populate('department', 'name shortName')
-                .sort({ createdAt: -1 });
+            if (departmentParam) {
+                // Filter by specific department
+                teachers = await Teacher.find({ department: departmentParam })
+                    .populate('department', 'name shortName')
+                    .sort({ createdAt: -1 });
+            } else {
+                // Return all teachers
+                teachers = await Teacher.find()
+                    .populate('department', 'name shortName')
+                    .sort({ createdAt: -1 });
+            }
         } else {
             if (!user?.department) {
                 return NextResponse.json({ error: 'No department assigned' }, { status: 400 });

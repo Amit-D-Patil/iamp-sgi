@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import letterhead from '@/assets/letterhead.jpg';
@@ -22,6 +23,12 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
+
+interface Department {
+    _id: string;
+    name: string;
+    shortName: string;
+}
 
 interface Question {
     _id: string;
@@ -76,21 +83,53 @@ const getMonthYear = () => {
 };
 
 export default function FeedbackReportsPage() {
+    const { data: session } = useSession();
+    const [departments, setDepartments] = useState<Department[]>([]);
+    const [selectedDepartment, setSelectedDepartment] = useState<string>('all');
     const [questions, setQuestions] = useState<Question[]>([]);
     const [reports, setReports] = useState<TeacherReport[]>([]);
     const [teachers, setTeachers] = useState<Teacher[]>([]);
     const [selectedTeacher, setSelectedTeacher] = useState<string>('all');
     const [isLoading, setIsLoading] = useState(true);
 
+    const isSuperAdmin = session?.user?.role === 'super_admin';
+
     useEffect(() => {
+        if (isSuperAdmin) {
+            fetchDepartments();
+        }
         fetchData();
-    }, []);
+    }, [isSuperAdmin]);
+
+    // Refetch when department changes (for super_admin)
+    useEffect(() => {
+        if (isSuperAdmin) {
+            fetchData();
+            setSelectedTeacher('all'); // Reset teacher filter when department changes
+        }
+    }, [selectedDepartment, isSuperAdmin]);
+
+    const fetchDepartments = async () => {
+        try {
+            const res = await fetch('/api/departments');
+            const data = await res.json();
+            setDepartments(data.departments || []);
+        } catch (error) {
+            console.error('Error fetching departments:', error);
+        }
+    };
 
     const fetchData = async () => {
         try {
+            // Build query params
+            const params = new URLSearchParams();
+            if (isSuperAdmin && selectedDepartment !== 'all') {
+                params.set('department', selectedDepartment);
+            }
+
             const [reportsRes, teachersRes] = await Promise.all([
-                fetch('/api/feedback-reports'),
-                fetch('/api/teachers'),
+                fetch(`/api/feedback-reports?${params.toString()}`),
+                fetch(`/api/teachers${isSuperAdmin && selectedDepartment !== 'all' ? `?department=${selectedDepartment}` : ''}`),
             ]);
             const reportsData = await reportsRes.json();
             const teachersData = await teachersRes.json();
@@ -126,6 +165,25 @@ export default function FeedbackReportsPage() {
                     <p className="text-muted-foreground text-sm">Teacher-wise feedback analysis</p>
                 </div>
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                    {/* Department filter - only for super_admin */}
+                    {isSuperAdmin && (
+                        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                            <Label className="sm:shrink-0">Department:</Label>
+                            <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
+                                <SelectTrigger className="w-full sm:w-48">
+                                    <SelectValue placeholder="Select department" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">All Departments</SelectItem>
+                                    {departments.map((dept) => (
+                                        <SelectItem key={dept._id} value={dept._id}>
+                                            {dept.name} ({dept.shortName})
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    )}
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                         <Label className="sm:shrink-0">Faculty:</Label>
                         <Select value={selectedTeacher} onValueChange={setSelectedTeacher}>

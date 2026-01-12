@@ -154,7 +154,7 @@ export default function UsersPage() {
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">All Users</SelectItem>
-                            <SelectItem value="iamp_coordinator">IAMP Coordinators</SelectItem>
+                            <SelectItem value="iamp_coordinator">IAMC Coordinators</SelectItem>
                             <SelectItem value="feedback_coordinator">Feedback Coordinators</SelectItem>
                             <SelectItem value="principal">Principals</SelectItem>
                             <SelectItem value="hod">HODs</SelectItem>
@@ -181,7 +181,7 @@ export default function UsersPage() {
                                             <SelectValue placeholder="Select role" />
                                         </SelectTrigger>
                                         <SelectContent>
-                                            <SelectItem value="iamp_coordinator">IAMP Coordinator</SelectItem>
+                                            <SelectItem value="iamp_coordinator">IAMC Coordinator</SelectItem>
                                             <SelectItem value="feedback_coordinator">Feedback Coordinator</SelectItem>
                                             <SelectItem value="principal">Principal</SelectItem>
                                             <SelectItem value="hod">HOD</SelectItem>

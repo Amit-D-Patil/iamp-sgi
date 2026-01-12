@@ -36,6 +36,7 @@ interface Question {
     category?: string;
     order: number;
     isActive: boolean;
+    isRequired: boolean;
     createdAt: string;
 }
 
@@ -53,6 +54,7 @@ export default function QuestionsPage() {
         text: '',
         type: 'abcd_grade' as 'abcd_grade' | 'text' | 'yes_no',
         category: '',
+        isRequired: false,
     });
 
     useEffect(() => {
@@ -81,7 +83,7 @@ export default function QuestionsPage() {
             });
             if (res.ok) {
                 setIsOpen(false);
-                setFormData({ text: '', type: 'abcd_grade', category: '' });
+                setFormData({ text: '', type: 'abcd_grade', category: '', isRequired: false });
                 fetchQuestions();
             } else {
                 const data = await res.json();
@@ -178,6 +180,23 @@ export default function QuestionsPage() {
                                     placeholder="e.g., Teaching, Course Content, Infrastructure"
                                 />
                             </div>
+                            {formData.type === 'text' && (
+                                <div className="flex items-center justify-between p-3 border rounded-lg">
+                                    <div>
+                                        <Label htmlFor="isRequired">Required</Label>
+                                        <p className="text-xs text-muted-foreground">
+                                            Students must answer this question
+                                        </p>
+                                    </div>
+                                    <Switch
+                                        id="isRequired"
+                                        checked={formData.isRequired}
+                                        onCheckedChange={(checked) =>
+                                            setFormData({ ...formData, isRequired: checked })
+                                        }
+                                    />
+                                </div>
+                            )}
                             <Button type="submit" className="w-full" disabled={!formData.text}>
                                 Create Question
                             </Button>
@@ -216,7 +235,12 @@ export default function QuestionsPage() {
                                         <p className="line-clamp-2">{question.text}</p>
                                     </TableCell>
                                     <TableCell>
-                                        <Badge variant="outline">{typeLabels[question.type]}</Badge>
+                                        <div className="flex gap-1 flex-wrap">
+                                            <Badge variant="outline">{typeLabels[question.type]}</Badge>
+                                            {question.type === 'text' && question.isRequired && (
+                                                <Badge variant="destructive">Required</Badge>
+                                            )}
+                                        </div>
                                     </TableCell>
                                     <TableCell>
                                         {question.category ? (

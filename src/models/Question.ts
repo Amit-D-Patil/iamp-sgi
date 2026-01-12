@@ -6,6 +6,7 @@ export interface IQuestion extends Document {
     category?: string;
     order: number;
     isActive: boolean;
+    isRequired: boolean;
     createdBy: Types.ObjectId;
     createdAt: Date;
     updatedAt: Date;
@@ -34,6 +35,10 @@ const QuestionSchema = new Schema<IQuestion>(
         isActive: {
             type: Boolean,
             default: true,
+        },
+        isRequired: {
+            type: Boolean,
+            default: false,
         },
         createdBy: {
             type: Schema.Types.ObjectId,

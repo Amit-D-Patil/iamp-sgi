@@ -33,21 +33,32 @@ export async function GET(request: NextRequest) {
 
         const user = await User.findById(session.user.id);
 
-        // Get teacher ID from query params (optional)
+        // Get query params
         const { searchParams } = new URL(request.url);
         const teacherId = searchParams.get('teacher');
         const sessionId = searchParams.get('session');
+        const departmentId = searchParams.get('department');
 
         // Get only abcd_grade questions (for headers)
         const questions = await Question.find({ isActive: true, type: 'abcd_grade' }).sort({ order: 1 });
 
-        // Get teachers (filter by department for non-super-admin)
+        // Determine department filter
+        let departmentFilter: string | undefined;
+        if (session.user.role === 'super_admin') {
+            // Super admin can filter by department or see all
+            departmentFilter = departmentId || undefined;
+        } else if (user?.department) {
+            // Other roles see only their department
+            departmentFilter = user.department.toString();
+        }
+
+        // Get teachers (filter by department)
         const teacherQuery: { _id?: string; department?: string } = {};
         if (teacherId) {
             teacherQuery._id = teacherId;
         }
-        if (session.user.role !== 'super_admin' && user?.department) {
-            teacherQuery.department = user.department.toString();
+        if (departmentFilter) {
+            teacherQuery.department = departmentFilter;
         }
 
         const teachers = await Teacher.find(teacherQuery).select('name shortName');
@@ -57,8 +68,8 @@ export async function GET(request: NextRequest) {
         if (sessionId) {
             sessionQuery._id = sessionId;
         }
-        if (session.user.role !== 'super_admin' && user?.department) {
-            sessionQuery.department = user.department.toString();
+        if (departmentFilter) {
+            sessionQuery.department = departmentFilter;
         }
 
         const feedbackSessions = await FeedbackSession.find(sessionQuery)
@@ -76,7 +87,11 @@ export async function GET(request: NextRequest) {
             teacher: { $in: teachers.map(t => t._id) },
         })
             .populate('teacher', 'name shortName')
-            .populate('class', 'displayName')
+            .populate({
+                path: 'class',
+                select: 'displayName department',
+                populate: { path: 'department', select: 'shortName' }
+            })
             .populate('subject', 'name code');
 
         // Calculate averages per teacher per question per class/type
@@ -153,8 +168,17 @@ export async function GET(request: NextRequest) {
                 }
 
                 if (totalCount > 0) {
+                    const classData = mapping.class as unknown as {
+                        displayName: string;
+                        department?: { shortName: string }
+                    };
+                    const deptShortName = classData.department?.shortName || '';
+                    const classDisplay = deptShortName
+                        ? `${deptShortName}-${classData.displayName}`
+                        : classData.displayName;
+
                     rows.push({
-                        class: (mapping.class as unknown as { displayName: string }).displayName,
+                        class: classDisplay,
                         subject: (mapping.subject as unknown as { name: string }).name,
                         teachingType: mapping.teachingType,
                         questionAverages,
