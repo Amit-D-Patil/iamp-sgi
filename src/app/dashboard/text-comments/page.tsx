@@ -17,6 +17,7 @@ import { Label } from '@/components/ui/label';
 
 interface ClassComments {
     className: string;
+    departmentName: string;
     batches: {
         batchName: string;
         questions: {
@@ -29,6 +30,8 @@ interface ClassComments {
 interface FeedbackSession {
     _id: string;
     className: string;
+    departmentId: string;
+    departmentName: string;
 }
 
 // Get academic year
@@ -58,6 +61,12 @@ export default function TextCommentsPage() {
     );
 }
 
+interface Department {
+    _id: string;
+    name: string;
+    shortName: string;
+}
+
 function TextCommentsContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
@@ -66,6 +75,8 @@ function TextCommentsContent() {
 
     const [comments, setComments] = useState<ClassComments[]>([]);
     const [sessions, setSessions] = useState<FeedbackSession[]>([]);
+    const [departments, setDepartments] = useState<Department[]>([]);
+    const [selectedDepartment, setSelectedDepartment] = useState<string>('all');
     const [selectedSession, setSelectedSession] = useState<string>('all');
     const [isLoading, setIsLoading] = useState(true);
 
@@ -87,11 +98,16 @@ function TextCommentsContent() {
 
     const fetchData = async () => {
         try {
-            const res = await fetch('/api/text-comments');
-            const data = await res.json();
+            const [commentsRes, departmentsRes] = await Promise.all([
+                fetch('/api/text-comments'),
+                fetch('/api/departments'),
+            ]);
+            const commentsData = await commentsRes.json();
+            const departmentsData = await departmentsRes.json();
 
-            setComments(data.comments || []);
-            setSessions(data.sessions || []);
+            setComments(commentsData.comments || []);
+            setSessions(commentsData.sessions || []);
+            setDepartments(departmentsData.departments || []);
         } catch (error) {
             console.error('Error fetching data:', error);
         } finally {
@@ -103,9 +119,14 @@ function TextCommentsContent() {
         window.print();
     };
 
-    const filteredComments = selectedSession === 'all'
+    // Filter by department first, then by session
+    const filteredByDepartment = selectedDepartment === 'all'
         ? comments
-        : comments.filter(c => {
+        : comments.filter(c => c.departmentName === departments.find(d => d._id === selectedDepartment)?.name);
+
+    const filteredComments = selectedSession === 'all'
+        ? filteredByDepartment
+        : filteredByDepartment.filter(c => {
             const session = sessions.find(s => s.className === c.className);
             return session && session._id === selectedSession;
         });
@@ -144,6 +165,27 @@ function TextCommentsContent() {
                     </p>
                 </div>
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                    {/* Department Filter */}
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                        <Label className="sm:shrink-0">Department:</Label>
+                        <Select value={selectedDepartment} onValueChange={(val) => {
+                            setSelectedDepartment(val);
+                            setSelectedSession('all'); // Reset class filter when department changes
+                        }}>
+                            <SelectTrigger className="w-full sm:w-48">
+                                <SelectValue placeholder="Select department" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Departments</SelectItem>
+                                {departments.map((dept) => (
+                                    <SelectItem key={dept._id} value={dept._id}>
+                                        {dept.name} ({dept.shortName})
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    {/* Class Filter */}
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                         <Label className="sm:shrink-0">Class:</Label>
                         <Select value={selectedSession} onValueChange={setSelectedSession}>
@@ -152,11 +194,15 @@ function TextCommentsContent() {
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">All Classes</SelectItem>
-                                {sessions.map((session) => (
-                                    <SelectItem key={session._id} value={session._id}>
-                                        {session.className}
-                                    </SelectItem>
-                                ))}
+                                {sessions
+                                    .filter(s => selectedDepartment === 'all' || s.departmentId === selectedDepartment)
+                                    .map((session) => (
+                                        <SelectItem key={session._id} value={session._id}>
+                                            {selectedDepartment === 'all'
+                                                ? `${session.departmentName ? session.departmentName + ' - ' : ''}${session.className}`
+                                                : session.className}
+                                        </SelectItem>
+                                    ))}
                             </SelectContent>
                         </Select>
                     </div>
@@ -177,11 +223,14 @@ function TextCommentsContent() {
                     {/* ====== SCREEN VIEW - Shadcn Style ====== */}
                     <div className="screen-only space-y-6">
                         {filteredComments.map((classData) => (
-                            <Card key={classData.className}>
+                            <Card key={`${classData.departmentName}-${classData.className}`}>
                                 <CardHeader>
                                     <CardTitle className="text-lg">
                                         {classData.className}
                                     </CardTitle>
+                                    <p className="text-sm text-muted-foreground">
+                                        {classData.departmentName}
+                                    </p>
                                 </CardHeader>
                                 <CardContent className="space-y-6">
                                     {showBatchWise ? (
@@ -241,7 +290,7 @@ function TextCommentsContent() {
                     {/* ====== PRINT VIEW ====== */}
                     <div className="print-only" style={{ width: '100%' }}>
                         {filteredComments.map((classData, classIndex) => (
-                            <div key={classData.className} style={{ pageBreakBefore: classIndex > 0 ? 'always' : 'auto' }}>
+                            <div key={`${classData.departmentName}-${classData.className}`} style={{ pageBreakBefore: classIndex > 0 ? 'always' : 'auto' }}>
                                 {/* Header */}
                                 <div style={{ width: '100%', borderBottom: '1px solid black', paddingBottom: '10px', marginBottom: '10px' }}>
                                     <div style={{ textAlign: 'center' }}>
@@ -254,9 +303,10 @@ function TextCommentsContent() {
                                     </div>
                                 </div>
 
-                                {/* Class Name */}
+                                {/* Class Name and Department */}
                                 <div style={{ marginBottom: '15px' }}>
-                                    <b style={{ fontSize: '14px' }}>Class: {classData.className}</b>
+                                    <b style={{ fontSize: '14px' }}>Class: {classData.className}</b><br />
+                                    <span style={{ fontSize: '12px', color: '#666' }}>{classData.departmentName}</span>
                                 </div>
 
                                 {showBatchWise ? (

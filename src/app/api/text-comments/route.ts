@@ -6,11 +6,13 @@ import Question from '@/models/Question';
 import User from '@/models/User';
 import Class from '@/models/Class';
 import Batch from '@/models/Batch';
+import Department from '@/models/Department';
 import { auth } from '@/lib/auth';
 
 // Ensure models are registered
 Class;
 Batch;
+Department;
 
 // GET - Get text comments report (division-wise)
 export async function GET(request: NextRequest) {
@@ -67,10 +69,12 @@ export async function GET(request: NextRequest) {
             feedbackSession: { $in: sessionIds },
         }).populate('batch', 'name');
 
-        // Group comments by session (class) and batch (division)
+        // Group comments by department+class and batch (division)
         const commentsMap: Record<string, {
             sessionId: string;
             className: string;
+            departmentId: string;
+            departmentName: string;
             batchName: string;
             questionId: string;
             questionText: string;
@@ -84,6 +88,9 @@ export async function GET(request: NextRequest) {
             if (!feedbackSession) continue;
 
             const classInfo = feedbackSession.class as unknown as { displayName: string };
+            const deptInfo = feedbackSession.department as unknown as { _id: string; name: string; shortName: string } | null;
+            const departmentId = deptInfo?._id?.toString() || 'unknown';
+            const departmentName = deptInfo?.name || 'Unknown Department';
             const batchInfo = response.batch as unknown as { name: string } | null;
             const batchName = batchInfo?.name || 'General';
 
@@ -97,12 +104,15 @@ export async function GET(request: NextRequest) {
                 );
                 if (!question) continue;
 
-                const key = `${feedbackSession._id}-${batchName}-${question._id}`;
+                // Key now includes departmentId to separate classes by department
+                const key = `${departmentId}-${classInfo.displayName}-${batchName}-${question._id}`;
 
                 if (!commentsMap[key]) {
                     commentsMap[key] = {
                         sessionId: feedbackSession._id.toString(),
                         className: classInfo.displayName,
+                        departmentId,
+                        departmentName,
                         batchName,
                         questionId: question._id.toString(),
                         questionText: question.text,
@@ -114,12 +124,13 @@ export async function GET(request: NextRequest) {
             }
         }
 
-        // Convert to array and group by class
+        // Convert to array and group by department+class
         const commentsArray = Object.values(commentsMap);
 
-        // Group by class for easier display
-        const groupedByClass: Record<string, {
+        // Group by department and class for easier display
+        const groupedByDeptClass: Record<string, {
             className: string;
+            departmentName: string;
             batches: {
                 batchName: string;
                 questions: {
@@ -130,19 +141,23 @@ export async function GET(request: NextRequest) {
         }> = {};
 
         for (const item of commentsArray) {
-            if (!groupedByClass[item.className]) {
-                groupedByClass[item.className] = {
+            // Key is departmentId + className to separate same class names across departments
+            const groupKey = `${item.departmentId}-${item.className}`;
+
+            if (!groupedByDeptClass[groupKey]) {
+                groupedByDeptClass[groupKey] = {
                     className: item.className,
+                    departmentName: item.departmentName,
                     batches: [],
                 };
             }
 
-            let batch = groupedByClass[item.className].batches.find(
+            let batch = groupedByDeptClass[groupKey].batches.find(
                 b => b.batchName === item.batchName
             );
             if (!batch) {
                 batch = { batchName: item.batchName, questions: [] };
-                groupedByClass[item.className].batches.push(batch);
+                groupedByDeptClass[groupKey].batches.push(batch);
             }
 
             batch.questions.push({
@@ -153,14 +168,20 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
             questions: textQuestions.map(q => ({ _id: q._id, text: q.text })),
-            sessions: feedbackSessions.map(s => ({
-                _id: s._id,
-                className: (s.class as unknown as { displayName: string }).displayName,
-            })),
-            comments: Object.values(groupedByClass),
+            sessions: feedbackSessions.map(s => {
+                const deptInfo = s.department as unknown as { _id: string; name: string; shortName: string } | null;
+                return {
+                    _id: s._id,
+                    className: (s.class as unknown as { displayName: string }).displayName,
+                    departmentId: deptInfo?._id?.toString() || '',
+                    departmentName: deptInfo?.name || '',
+                };
+            }),
+            comments: Object.values(groupedByDeptClass),
         }, { status: 200 });
     } catch (error) {
         console.error('Error generating text comments report:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }
+
