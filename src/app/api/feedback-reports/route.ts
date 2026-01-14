@@ -83,7 +83,7 @@ export async function GET(request: NextRequest) {
         });
 
         // Get teacher mappings for class/subject info
-        const mappings = await TeacherMapping.find({
+        const rawMappings = await TeacherMapping.find({
             teacher: { $in: teachers.map(t => t._id) },
         })
             .populate('teacher', 'name shortName')
@@ -93,6 +93,9 @@ export async function GET(request: NextRequest) {
                 populate: { path: 'department', select: 'shortName' }
             })
             .populate('subject', 'name code');
+
+        // Filter out mappings with deleted teachers, subjects, or classes
+        const mappings = rawMappings.filter(m => m.teacher && m.class && m.subject);
 
         // Calculate averages per teacher per question per class/type
         const reports: {

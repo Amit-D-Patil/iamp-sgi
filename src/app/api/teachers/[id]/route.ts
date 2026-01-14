@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import Teacher from '@/models/Teacher';
+import TeacherMapping from '@/models/TeacherMapping';
 import { auth } from '@/lib/auth';
 
 // Update a teacher
@@ -53,7 +54,14 @@ export async function DELETE(
             return NextResponse.json({ error: 'Teacher not found' }, { status: 404 });
         }
 
-        return NextResponse.json({ message: 'Teacher deleted' }, { status: 200 });
+        // Cascade delete: Remove all teacher mappings for this teacher
+        const deletedMappings = await TeacherMapping.deleteMany({ teacher: id });
+        console.log(`Deleted ${deletedMappings.deletedCount} mappings for teacher ${id}`);
+
+        return NextResponse.json({
+            message: 'Teacher deleted',
+            deletedMappings: deletedMappings.deletedCount
+        }, { status: 200 });
     } catch (error) {
         console.error('Error deleting teacher:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

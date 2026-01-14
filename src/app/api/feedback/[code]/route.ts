@@ -72,7 +72,7 @@ export async function GET(
         const questions = await Question.find({ isActive: true }).sort({ order: 1 });
 
         // Get teacher mappings for this class (exclude SLA - only theory and practical for feedback)
-        const mappings = await TeacherMapping.find({
+        const rawMappings = await TeacherMapping.find({
             class: feedbackSession.class._id,
             isActive: true,
             teachingType: { $in: ['theory', 'practical'] }, // Exclude SLA
@@ -80,6 +80,12 @@ export async function GET(
             .populate('teacher', 'name shortName')
             .populate('subject', 'name code')
             .populate('batches', 'name');
+
+        // Filter out mappings with deleted teachers or subjects
+        const mappings = rawMappings.filter(mapping => {
+            // Check if teacher and subject exist (not deleted)
+            return mapping.teacher && mapping.subject;
+        });
 
         return NextResponse.json({
             session: {
