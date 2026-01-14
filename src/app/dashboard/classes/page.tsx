@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -50,6 +51,17 @@ interface ClassItem {
 const yearOptions = ['FY', 'SY', 'TY', 'BTech'];
 
 export default function ClassesPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <ClassesContent />
+        </Suspense>
+    );
+}
+
+function ClassesContent() {
+    const searchParams = useSearchParams();
+    const canDelete = searchParams.get('delete') === 'true';
+
     const [classes, setClasses] = useState<ClassItem[]>([]);
     const [batches, setBatches] = useState<Record<string, BatchItem[]>>({});
     const [isLoading, setIsLoading] = useState(true);
@@ -352,13 +364,15 @@ export default function ClassesPage() {
                                                 >
                                                     Batches
                                                 </Button>
-                                                <Button
-                                                    variant="destructive"
-                                                    size="sm"
-                                                    onClick={() => deleteClass(cls._id)}
-                                                >
-                                                    Delete
-                                                </Button>
+                                                {canDelete && (
+                                                    <Button
+                                                        variant="destructive"
+                                                        size="sm"
+                                                        onClick={() => deleteClass(cls._id)}
+                                                    >
+                                                        Delete
+                                                    </Button>
+                                                )}
                                             </div>
                                         </TableCell>
                                     </TableRow>

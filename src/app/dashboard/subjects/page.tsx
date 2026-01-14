@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -64,6 +65,17 @@ const defaultTypes: SubjectTypes = {
 };
 
 export default function SubjectsPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <SubjectsContent />
+        </Suspense>
+    );
+}
+
+function SubjectsContent() {
+    const searchParams = useSearchParams();
+    const canDelete = searchParams.get('delete') === 'true';
+
     const [subjects, setSubjects] = useState<Subject[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isOpen, setIsOpen] = useState(false);
@@ -389,13 +401,15 @@ export default function SubjectsPage() {
                                         />
                                     </TableCell>
                                     <TableCell>
-                                        <Button
-                                            variant="destructive"
-                                            size="sm"
-                                            onClick={() => handleDelete(subject._id)}
-                                        >
-                                            Delete
-                                        </Button>
+                                        {canDelete && (
+                                            <Button
+                                                variant="destructive"
+                                                size="sm"
+                                                onClick={() => handleDelete(subject._id)}
+                                            >
+                                                Delete
+                                            </Button>
+                                        )}
                                     </TableCell>
                                 </TableRow>
                             ))

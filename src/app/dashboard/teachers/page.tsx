@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -79,6 +80,17 @@ interface Teacher {
 }
 
 export default function TeachersPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <TeachersContent />
+        </Suspense>
+    );
+}
+
+function TeachersContent() {
+    const searchParams = useSearchParams();
+    const canDelete = searchParams.get('delete') === 'true';
+
     const [teachers, setTeachers] = useState<Teacher[]>([]);
     const [subjects, setSubjects] = useState<Subject[]>([]);
     const [classes, setClasses] = useState<ClassItem[]>([]);
@@ -475,13 +487,15 @@ export default function TeachersPage() {
                                             >
                                                 Mappings
                                             </Button>
-                                            <Button
-                                                variant="destructive"
-                                                size="sm"
-                                                onClick={() => handleDelete(teacher._id)}
-                                            >
-                                                Delete
-                                            </Button>
+                                            {canDelete && (
+                                                <Button
+                                                    variant="destructive"
+                                                    size="sm"
+                                                    onClick={() => handleDelete(teacher._id)}
+                                                >
+                                                    Delete
+                                                </Button>
+                                            )}
                                         </div>
                                     </TableCell>
                                 </TableRow>
