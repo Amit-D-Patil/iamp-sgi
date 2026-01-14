@@ -13,7 +13,8 @@ export async function GET() {
 
         await connectDB();
 
-        const questions = await Question.find({ isActive: true })
+        // Show all questions (both active and inactive) for management
+        const questions = await Question.find()
             .sort({ order: 1, createdAt: 1 });
 
         return NextResponse.json({ questions }, { status: 200 });
