@@ -44,8 +44,8 @@ export async function GET(request: NextRequest) {
 
         // Determine department filter
         let departmentFilter: string | undefined;
-        if (session.user.role === 'super_admin') {
-            // Super admin can filter by department or see all
+        if (session.user.role === 'super_admin' || session.user.role === 'principal') {
+            // Super admin and principal can filter by department or see all
             departmentFilter = departmentId || undefined;
         } else if (user?.department) {
             // Other roles see only their department

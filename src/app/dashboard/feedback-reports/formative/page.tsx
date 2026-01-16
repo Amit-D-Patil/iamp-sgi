@@ -92,22 +92,22 @@ export default function FeedbackReportsPage() {
     const [selectedTeacher, setSelectedTeacher] = useState<string>('all');
     const [isLoading, setIsLoading] = useState(true);
 
-    const isSuperAdmin = session?.user?.role === 'super_admin';
+    const canFilterByDepartment = session?.user?.role === 'super_admin' || session?.user?.role === 'principal';
 
     useEffect(() => {
-        if (isSuperAdmin) {
+        if (canFilterByDepartment) {
             fetchDepartments();
         }
         fetchData();
-    }, [isSuperAdmin]);
+    }, [canFilterByDepartment]);
 
-    // Refetch when department changes (for super_admin)
+    // Refetch when department changes (for super_admin and principal)
     useEffect(() => {
-        if (isSuperAdmin) {
+        if (canFilterByDepartment) {
             fetchData();
             setSelectedTeacher('all'); // Reset teacher filter when department changes
         }
-    }, [selectedDepartment, isSuperAdmin]);
+    }, [selectedDepartment, canFilterByDepartment]);
 
     const fetchDepartments = async () => {
         try {
@@ -123,13 +123,13 @@ export default function FeedbackReportsPage() {
         try {
             // Build query params
             const params = new URLSearchParams();
-            if (isSuperAdmin && selectedDepartment !== 'all') {
+            if (canFilterByDepartment && selectedDepartment !== 'all') {
                 params.set('department', selectedDepartment);
             }
 
             const [reportsRes, teachersRes] = await Promise.all([
                 fetch(`/api/feedback-reports?${params.toString()}`),
-                fetch(`/api/teachers${isSuperAdmin && selectedDepartment !== 'all' ? `?department=${selectedDepartment}` : ''}`),
+                fetch(`/api/teachers${canFilterByDepartment && selectedDepartment !== 'all' ? `?department=${selectedDepartment}` : ''}`),
             ]);
             const reportsData = await reportsRes.json();
             const teachersData = await teachersRes.json();
@@ -165,8 +165,8 @@ export default function FeedbackReportsPage() {
                     <p className="text-muted-foreground text-sm">Teacher-wise feedback analysis</p>
                 </div>
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                    {/* Department filter - only for super_admin */}
-                    {isSuperAdmin && (
+                    {/* Department filter - for super_admin and principal */}
+                    {canFilterByDepartment && (
                         <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                             <Label className="sm:shrink-0">Department:</Label>
                             <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>

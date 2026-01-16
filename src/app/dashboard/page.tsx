@@ -21,7 +21,7 @@ const roleLabels: Record<string, string> = {
     super_admin: 'Super Admin',
     iamp_coordinator: 'IAMC Coordinator',
     feedback_coordinator: 'Feedback Coordinator',
-    principal: 'Principal',
+    principal: 'Director',
     hod: 'Head of Department',
 };
 

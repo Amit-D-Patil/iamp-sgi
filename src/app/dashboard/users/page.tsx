@@ -49,7 +49,7 @@ const roleLabels: Record<string, string> = {
     super_admin: 'Super Admin',
     iamp_coordinator: 'IAMC Coordinator',
     feedback_coordinator: 'Feedback Coordinator',
-    principal: 'Principal',
+    principal: 'Director',
     hod: 'HOD',
 };
 
@@ -156,7 +156,7 @@ export default function UsersPage() {
                             <SelectItem value="all">All Users</SelectItem>
                             <SelectItem value="iamp_coordinator">IAMC Coordinators</SelectItem>
                             <SelectItem value="feedback_coordinator">Feedback Coordinators</SelectItem>
-                            <SelectItem value="principal">Principals</SelectItem>
+                            <SelectItem value="principal">Director</SelectItem>
                             <SelectItem value="hod">HODs</SelectItem>
                         </SelectContent>
                     </Select>
@@ -183,7 +183,7 @@ export default function UsersPage() {
                                         <SelectContent>
                                             <SelectItem value="iamp_coordinator">IAMC Coordinator</SelectItem>
                                             <SelectItem value="feedback_coordinator">Feedback Coordinator</SelectItem>
-                                            <SelectItem value="principal">Principal</SelectItem>
+                                            <SelectItem value="principal">Director</SelectItem>
                                             <SelectItem value="hod">HOD</SelectItem>
                                         </SelectContent>
                                     </Select>
