@@ -79,7 +79,7 @@ export default function ReportsPage() {
     const printRef = useRef<HTMLDivElement>(null);
 
     const role = session?.user?.role;
-    const canSelectDepartment = role === 'super_admin' || role === 'principal';
+    const canSelectDepartment = role === 'super_admin' || role === 'principal' || role === 'iamp_coordinator';
 
     useEffect(() => {
         fetchInitialData();

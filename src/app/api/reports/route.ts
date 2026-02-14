@@ -37,10 +37,12 @@ export async function GET(request: NextRequest) {
         let departmentFilter: string | undefined;
         let canSelectDepartment = false;
 
-        if (role === 'super_admin' || role === 'principal') {
+        if (role === 'super_admin' || role === 'principal' || role === 'iamp_coordinator') {
+            // Super admin, principal, and IAMP coordinator can select any department
             canSelectDepartment = true;
             departmentFilter = departmentId || undefined;
-        } else if (role === 'hod' || role === 'iamp_coordinator') {
+        } else if (role === 'hod') {
+            // HOD restricted to their department
             if (!user?.department) {
                 return NextResponse.json({ error: 'No department assigned' }, { status: 400 });
             }
@@ -77,8 +79,8 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Semester not found' }, { status: 404 });
         }
 
-        // Get all active IAMP points
-        const iampPoints = await IAMPPoint.find({ isActive: true });
+        // Get all active IAMP points (sorted by creation date - first added comes first)
+        const iampPoints = await IAMPPoint.find({ isActive: true }).sort({ createdAt: -1 });
 
         // Get all teacher mappings for this department
         const teacherMappings = await TeacherMapping.find({

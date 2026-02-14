@@ -24,15 +24,26 @@ export async function GET(request: NextRequest) {
 
         await connectDB();
 
-        const user = await User.findById(session.user.id);
-        if (!user?.department) {
-            return NextResponse.json({ error: 'No department assigned' }, { status: 400 });
-        }
-
         const { searchParams } = new URL(request.url);
         const teacherId = searchParams.get('teacher');
+        const departmentParam = searchParams.get('department');
+        const allDepartments = searchParams.get('allDepartments') === 'true';
 
-        const query: Record<string, unknown> = { department: user.department };
+        const query: Record<string, unknown> = {};
+
+        // If specific department requested, use it
+        if (departmentParam) {
+            query.department = departmentParam;
+        } else if (!allDepartments) {
+            // If not requesting all departments and no specific department, use user's department
+            const user = await User.findById(session.user.id);
+            if (!user?.department) {
+                return NextResponse.json({ error: 'No department assigned' }, { status: 400 });
+            }
+            query.department = user.department;
+        }
+        // If allDepartments=true, no department filter is applied
+
         if (teacherId) {
             query.teacher = teacherId;
         }

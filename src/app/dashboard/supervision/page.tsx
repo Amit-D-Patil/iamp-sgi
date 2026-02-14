@@ -37,6 +37,12 @@ interface Semester {
     isActive: boolean;
 }
 
+interface Department {
+    _id: string;
+    name: string;
+    shortName: string;
+}
+
 interface Supervision {
     _id: string;
     iampPoint: { _id: string; name: string };
@@ -53,7 +59,9 @@ interface RawMapping {
 }
 
 export default function SupervisionPage() {
-    const [mappingGroups, setMappingGroups] = useState<MappingGroup[]>([]);
+    const [allMappingGroups, setAllMappingGroups] = useState<MappingGroup[]>([]); // All mappings
+    const [mappingGroups, setMappingGroups] = useState<MappingGroup[]>([]); // Filtered by department
+    const [departments, setDepartments] = useState<Department[]>([]);
     const [allIampPoints, setAllIampPoints] = useState<IAMPPoint[]>([]);
     const [semesters, setSemesters] = useState<Semester[]>([]);
     const [supervisions, setSupervisions] = useState<Supervision[]>([]);
@@ -61,6 +69,7 @@ export default function SupervisionPage() {
     const [isSaving, setIsSaving] = useState<string | null>(null);
 
     const [selectedSemester, setSelectedSemester] = useState<string>('');
+    const [selectedDepartment, setSelectedDepartment] = useState<string>('');
     const [selectedMapping, setSelectedMapping] = useState<string>('');
 
     // Remarks state
@@ -83,16 +92,55 @@ export default function SupervisionPage() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedSemester, selectedMapping, selectedMappingData]);
 
+    // Filter mappings by selected department
+    useEffect(() => {
+        if (selectedDepartment) {
+            // Filter mappings from all mappings based on department
+            fetch(`/api/teacher-mappings?department=${selectedDepartment}`)
+                .then(res => res.json())
+                .then(data => {
+                    const rawMappings: RawMapping[] = data.mappings || [];
+                    const groupMap = new Map<string, MappingGroup>();
+
+                    rawMappings.forEach((m) => {
+                        if (!m.teacher?._id || !m.subject?._id || !m.class?._id) return;
+
+                        const key = `${m.teacher._id}-${m.subject._id}-${m.class._id}`;
+                        if (!groupMap.has(key)) {
+                            groupMap.set(key, {
+                                key,
+                                mappingId: m._id,
+                                teacher: m.teacher,
+                                subject: m.subject,
+                                class: m.class,
+                                remarks: m.remarks || '',
+                            });
+                        }
+                    });
+
+                    setMappingGroups(Array.from(groupMap.values()));
+                })
+                .catch(error => console.error('Error filtering mappings:', error));
+
+            // Reset mapping selection when department changes
+            setSelectedMapping('');
+        } else {
+            setMappingGroups([]);
+        }
+    }, [selectedDepartment]);
+
     const fetchInitialData = async () => {
         try {
-            const [mappingsRes, pointsRes, semestersRes] = await Promise.all([
-                fetch('/api/teacher-mappings'),
+            const [mappingsRes, pointsRes, semestersRes, departmentsRes] = await Promise.all([
+                fetch('/api/teacher-mappings?allDepartments=true'), // Get all departments' mappings
                 fetch('/api/iamp-points'),
                 fetch('/api/semesters'),
+                fetch('/api/departments'),
             ]);
             const mappingsData = await mappingsRes.json();
             const pointsData = await pointsRes.json();
             const semestersData = await semestersRes.json();
+            const departmentsData = await departmentsRes.json();
 
             // Group mappings by teacher-subject-class (ignore type)
             const rawMappings: RawMapping[] = mappingsData.mappings || [];
@@ -115,7 +163,8 @@ export default function SupervisionPage() {
                 }
             });
 
-            setMappingGroups(Array.from(groupMap.values()));
+            setAllMappingGroups(Array.from(groupMap.values())); // Store all mappings
+            setDepartments(departmentsData.departments || []);
             setAllIampPoints(
                 pointsData.points?.filter((p: IAMPPoint) => p.isActive) || []
             );
@@ -130,10 +179,10 @@ export default function SupervisionPage() {
     };
 
     const fetchSupervisions = async () => {
-        if (!selectedMappingData) return;
+        if (!selectedMappingData || !selectedDepartment) return;
         try {
             const res = await fetch(
-                `/api/supervisions?teacher=${selectedMappingData.teacher._id}&subject=${selectedMappingData.subject._id}&class=${selectedMappingData.class._id}&semester=${selectedSemester}`
+                `/api/supervisions?teacher=${selectedMappingData.teacher._id}&subject=${selectedMappingData.subject._id}&class=${selectedMappingData.class._id}&semester=${selectedSemester}&department=${selectedDepartment}`
             );
             const data = await res.json();
             setSupervisions(data.supervisions || []);
@@ -143,7 +192,7 @@ export default function SupervisionPage() {
     };
 
     const handleMark = async (iampPointId: string, status: 'yes' | 'no' | 'na') => {
-        if (!selectedMappingData) return;
+        if (!selectedMappingData || !selectedDepartment) return;
         setIsSaving(iampPointId);
         try {
             await fetch('/api/supervisions', {
@@ -155,6 +204,7 @@ export default function SupervisionPage() {
                     classId: selectedMappingData.class._id,
                     iampPoint: iampPointId,
                     semester: selectedSemester,
+                    department: selectedDepartment,
                     status,
                 }),
             });
@@ -287,10 +337,10 @@ export default function SupervisionPage() {
             {/* Selection */}
             <Card className="mb-6">
                 <CardHeader>
-                    <CardTitle className="text-lg">Select Semester & Teacher-Subject-Class</CardTitle>
+                    <CardTitle className="text-lg">Select Semester, Department & Teacher-Subject-Class</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="space-y-2">
                             <Label>Semester</Label>
                             <Select
@@ -311,11 +361,31 @@ export default function SupervisionPage() {
                         </div>
 
                         <div className="space-y-2">
+                            <Label>Department</Label>
+                            <Select
+                                value={selectedDepartment}
+                                onValueChange={setSelectedDepartment}
+                                disabled={!selectedSemester}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select a department" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {departments.map((dept) => (
+                                        <SelectItem key={dept._id} value={dept._id}>
+                                            {dept.name} ({dept.shortName})
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div className="space-y-2">
                             <Label>Teacher - Subject - Class</Label>
                             <Select
                                 value={selectedMapping}
                                 onValueChange={setSelectedMapping}
-                                disabled={!selectedSemester}
+                                disabled={!selectedSemester || !selectedDepartment}
                             >
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select a mapping" />
@@ -360,7 +430,7 @@ export default function SupervisionPage() {
                                 <p className="text-xs text-muted-foreground">
                                     Auto-saves after 1 second of inactivity
                                 </p>
-                            <DummyButton label='Save'/>
+                                <DummyButton label='Save' />
                             </div>
                         </div>
                     )}
@@ -431,7 +501,7 @@ export default function SupervisionPage() {
                                 })}
                             </div>
                         )}
-                        <DummyButton className='w-full' label='Save'/>
+                        <DummyButton className='w-full' label='Save' />
                     </CardContent>
                 </Card>
             ) : (

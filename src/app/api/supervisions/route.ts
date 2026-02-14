@@ -27,14 +27,14 @@ export async function GET(request: NextRequest) {
         const subjectId = searchParams.get('subject');
         const classId = searchParams.get('class');
         const semesterId = searchParams.get('semester');
+        const departmentId = searchParams.get('department'); // Accept department from query
 
-        // Get user's department
-        const user = await User.findById(session.user.id);
-        if (!user?.department) {
-            return NextResponse.json({ error: 'No department assigned' }, { status: 400 });
+        const query: Record<string, unknown> = {};
+
+        // Use provided department or require it if not provided
+        if (departmentId) {
+            query.department = departmentId;
         }
-
-        const query: Record<string, unknown> = { department: user.department };
 
         if (teacherId) query.teacher = teacherId;
         if (subjectId) query.subject = subjectId;
@@ -66,18 +66,12 @@ export async function POST(request: NextRequest) {
 
         await connectDB();
 
-        // Get user's department
-        const user = await User.findById(session.user.id);
-        if (!user?.department) {
-            return NextResponse.json({ error: 'No department assigned' }, { status: 400 });
-        }
-
         const body = await request.json();
-        const { teacher, subject, classId, iampPoint, status, remarks, semester } = body;
+        const { teacher, subject, classId, iampPoint, status, remarks, semester, department } = body;
 
-        if (!teacher || !subject || !classId || !iampPoint || !status || !semester) {
+        if (!teacher || !subject || !classId || !iampPoint || !status || !semester || !department) {
             return NextResponse.json(
-                { error: 'Teacher, subject, class, IAMP point, semester, and status are required' },
+                { error: 'Teacher, subject, class, IAMP point, semester, department, and status are required' },
                 { status: 400 }
             );
         }
@@ -106,7 +100,7 @@ export async function POST(request: NextRequest) {
                 subject,
                 class: classId,
                 iampPoint,
-                department: user.department,
+                department, // Use department from request
                 semester,
                 markedBy: session.user.id,
                 status,
