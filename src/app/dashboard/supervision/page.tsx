@@ -13,6 +13,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import DummyButton from '@/components/DummyButton';
 
 interface MappingGroup {
     key: string;
@@ -359,6 +360,7 @@ export default function SupervisionPage() {
                                 <p className="text-xs text-muted-foreground">
                                     Auto-saves after 1 second of inactivity
                                 </p>
+                            <DummyButton label='Save'/>
                             </div>
                         </div>
                     )}
@@ -429,6 +431,7 @@ export default function SupervisionPage() {
                                 })}
                             </div>
                         )}
+                        <DummyButton className='w-full' label='Save'/>
                     </CardContent>
                 </Card>
             ) : (

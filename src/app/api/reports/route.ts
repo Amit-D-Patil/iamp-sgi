@@ -78,7 +78,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Get all active IAMP points
-        const iampPoints = await IAMPPoint.find({ isActive: true }).sort({ name: 1 });
+        const iampPoints = await IAMPPoint.find({ isActive: true });
 
         // Get all teacher mappings for this department
         const teacherMappings = await TeacherMapping.find({
