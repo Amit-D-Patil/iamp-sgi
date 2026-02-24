@@ -21,6 +21,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import letterhead from '@/assets/letterhead.jpg';
+import StyleLayer from '@/components/StyleLayer';
 
 interface Teacher {
     _id: string;
@@ -231,6 +232,7 @@ export default function AppreciationLetterPage() {
             <div className="hidden print:block" ref={letterRef}>
                 {letterData && <LetterContent data={letterData} />}
             </div>
+            <StyleLayer />
         </div>
     );
 }
@@ -293,45 +295,45 @@ function LetterContent({ data }: { data: LetterData }) {
 
             {/* Scores Table */}
             <div className="mb-6 overflow-x-auto">
-    <Table className="border text-sm">
-        <TableHeader>
-            <TableRow>
-                <TableHead className="border bg-gray-100 font-bold text-center">Sr No</TableHead>
-                {/* Optional: You can also set a width on the header to ensure consistency */}
-                <TableHead className="border bg-gray-100 font-bold w-[250px]">Subject</TableHead>
-                <TableHead className="border bg-gray-100 font-bold text-center">Format</TableHead>
-                <TableHead className="border bg-gray-100 font-bold text-center">Class</TableHead>
-                <TableHead className="border bg-gray-100 font-bold text-center">Score</TableHead>
-                <TableHead className="border bg-gray-100 font-bold text-center">Remark</TableHead>
-            </TableRow>
-        </TableHeader>
-        <TableBody>
-            {data.mappings.map((mapping, idx) => (
-                <TableRow key={idx}>
-                    <TableCell className="border text-center">{idx + 1}</TableCell>
-                    
-                    {/* --- UPDATED CELL BELOW --- */}
-                    <TableCell className="border max-w-[250px] whitespace-normal break-words">
-                        {mapping.subjectName}
-                        {mapping.subjectCode && ` (${mapping.subjectCode})`}
-                    </TableCell>
-                    {/* -------------------------- */}
+                <Table className="border text-sm">
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead className="border bg-gray-100 font-bold text-center">Sr No</TableHead>
+                            {/* Optional: You can also set a width on the header to ensure consistency */}
+                            <TableHead className="border bg-gray-100 font-bold w-[250px]">Subject</TableHead>
+                            <TableHead className="border bg-gray-100 font-bold text-center">Format</TableHead>
+                            <TableHead className="border bg-gray-100 font-bold text-center">Class</TableHead>
+                            <TableHead className="border bg-gray-100 font-bold text-center">Score</TableHead>
+                            <TableHead className="border bg-gray-100 font-bold text-center">Remark</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {data.mappings.map((mapping, idx) => (
+                            <TableRow key={idx}>
+                                <TableCell className="border text-center">{idx + 1}</TableCell>
 
-                    <TableCell className="border text-center">
-                        {mapping.teachingType === 'TH' ? 'Theory' : 'Practical'}
-                    </TableCell>
-                    <TableCell className="border text-center">{mapping.class}</TableCell>
-                    <TableCell className="border text-center">
-                        {(mapping.overallAverage * 10).toFixed(0)}%
-                    </TableCell>
-                    <TableCell className="border text-center font-medium">
-                        {getRemark(mapping.overallAverage * 10)}
-                    </TableCell>
-                </TableRow>
-            ))}
-        </TableBody>
-    </Table>
-</div>
+                                {/* --- UPDATED CELL BELOW --- */}
+                                <TableCell className="border max-w-[250px] whitespace-normal break-words">
+                                    {mapping.subjectName}
+                                    {mapping.subjectCode && ` (${mapping.subjectCode})`}
+                                </TableCell>
+                                {/* -------------------------- */}
+
+                                <TableCell className="border text-center">
+                                    {mapping.teachingType === 'TH' ? 'Theory' : 'Practical'}
+                                </TableCell>
+                                <TableCell className="border text-center">{mapping.class}</TableCell>
+                                <TableCell className="border text-center">
+                                    {(mapping.overallAverage * 10).toFixed(0)}%
+                                </TableCell>
+                                <TableCell className="border text-center font-medium">
+                                    {getRemark(mapping.overallAverage * 10)}
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </div>
 
             {/* Appreciation text */}
             <div className="mb-8 text-justify leading-relaxed">

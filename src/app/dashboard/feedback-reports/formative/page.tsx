@@ -23,6 +23,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
+import StyleLayer from '@/components/StyleLayer';
 
 interface Department {
     _id: string;
@@ -411,6 +412,7 @@ export default function FeedbackReportsPage() {
                     </div>
                 ))}
             </div>
+            <StyleLayer />
         </div>
     );
 }

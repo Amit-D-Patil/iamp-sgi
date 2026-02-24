@@ -15,6 +15,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import StyleLayer from '@/components/StyleLayer';
 
 interface Department {
     _id: string;
@@ -471,6 +472,7 @@ export default function ReportsPage() {
                     }
                 }
             `}</style>
-        </div >
+            <StyleLayer />
+        </div>
     );
 }
