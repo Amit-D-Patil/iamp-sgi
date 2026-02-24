@@ -108,6 +108,16 @@ function TeachersContent() {
         email: '',
     });
 
+    // Edit teacher dialog
+    const [isEditOpen, setIsEditOpen] = useState(false);
+    const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null);
+    const [editFormData, setEditFormData] = useState({
+        name: '',
+        shortName: '',
+        phone: '',
+        email: '',
+    });
+
     // Mappings dialog
     const [isMappingOpen, setIsMappingOpen] = useState(false);
     const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
@@ -300,6 +310,36 @@ function TeachersContent() {
         }
     };
 
+    const openEditDialog = (teacher: Teacher) => {
+        setEditingTeacher(teacher);
+        setEditFormData({
+            name: teacher.name,
+            shortName: teacher.shortName,
+            phone: teacher.phone || '',
+            email: teacher.email || '',
+        });
+        setIsEditOpen(true);
+    };
+
+    const handleEditSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingTeacher) return;
+        try {
+            const res = await fetch(`/api/teachers/${editingTeacher._id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(editFormData),
+            });
+            if (res.ok) {
+                setIsEditOpen(false);
+                setEditingTeacher(null);
+                fetchData();
+            }
+        } catch (error) {
+            console.error('Error updating teacher:', error);
+        }
+    };
+
     const getTypeLabel = (type: string) => {
         const labels: Record<string, string> = {
             theory: 'TH',
@@ -483,6 +523,13 @@ function TeachersContent() {
                                             <Button
                                                 variant="outline"
                                                 size="sm"
+                                                onClick={() => openEditDialog(teacher)}
+                                            >
+                                                Edit
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
                                                 onClick={() => openMappingsDialog(teacher)}
                                             >
                                                 Mappings
@@ -504,6 +551,61 @@ function TeachersContent() {
                     </TableBody>
                 </Table>
             </div>
+
+            {/* Edit Teacher Dialog */}
+            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Edit Teacher</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleEditSubmit} className="space-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-name">Full Name</Label>
+                                <Input
+                                    id="edit-name"
+                                    value={editFormData.name}
+                                    onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                                    placeholder="e.g. Dr. John Smith"
+                                    required
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-shortName">Short Name</Label>
+                                <Input
+                                    id="edit-shortName"
+                                    value={editFormData.shortName}
+                                    onChange={(e) => setEditFormData({ ...editFormData, shortName: e.target.value })}
+                                    placeholder="e.g. J. Smith"
+                                    required
+                                />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-phone">Phone (Optional)</Label>
+                                <Input
+                                    id="edit-phone"
+                                    value={editFormData.phone}
+                                    onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-email">Email (Optional)</Label>
+                                <Input
+                                    id="edit-email"
+                                    type="email"
+                                    value={editFormData.email}
+                                    onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
+                                />
+                            </div>
+                        </div>
+                        <Button type="submit" className="w-full">
+                            Save Changes
+                        </Button>
+                    </form>
+                </DialogContent>
+            </Dialog>
 
             {/* Mappings Dialog */}
             <Dialog open={isMappingOpen} onOpenChange={setIsMappingOpen}>

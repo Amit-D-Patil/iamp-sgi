@@ -85,6 +85,15 @@ function SubjectsContent() {
         types: { ...defaultTypes },
     });
 
+    // Edit dialog
+    const [isEditOpen, setIsEditOpen] = useState(false);
+    const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
+    const [editFormData, setEditFormData] = useState({
+        name: '',
+        code: '',
+        types: { ...defaultTypes },
+    });
+
     useEffect(() => {
         fetchSubjects();
     }, []);
@@ -149,6 +158,42 @@ function SubjectsContent() {
         }));
     };
 
+    const updateEditTypes = (updates: Partial<SubjectTypes>) => {
+        setEditFormData((prev) => ({
+            ...prev,
+            types: { ...prev.types, ...updates },
+        }));
+    };
+
+    const openEditDialog = (subject: Subject) => {
+        setEditingSubject(subject);
+        setEditFormData({
+            name: subject.name,
+            code: subject.code || '',
+            types: subject.types ? { ...subject.types } : { ...defaultTypes },
+        });
+        setIsEditOpen(true);
+    };
+
+    const handleEditSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editingSubject) return;
+        try {
+            const res = await fetch(`/api/subjects/${editingSubject._id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(editFormData),
+            });
+            if (res.ok) {
+                setIsEditOpen(false);
+                setEditingSubject(null);
+                fetchSubjects();
+            }
+        } catch (error) {
+            console.error('Error updating subject:', error);
+        }
+    };
+
     const getTypesBadges = (types: SubjectTypes) => {
         const badges = [];
         if (types?.hasTheory) badges.push('TH');
@@ -169,7 +214,7 @@ function SubjectsContent() {
     }
 
     return (
-        <div>
+        <>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                 <h1 className="text-2xl font-bold">Subjects</h1>
                 <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -401,15 +446,24 @@ function SubjectsContent() {
                                         />
                                     </TableCell>
                                     <TableCell>
-                                        {canDelete && (
+                                        <div className="flex items-center gap-2">
                                             <Button
-                                                variant="destructive"
+                                                variant="outline"
                                                 size="sm"
-                                                onClick={() => handleDelete(subject._id)}
+                                                onClick={() => openEditDialog(subject)}
                                             >
-                                                Delete
+                                                Edit
                                             </Button>
-                                        )}
+                                            {canDelete && (
+                                                <Button
+                                                    variant="destructive"
+                                                    size="sm"
+                                                    onClick={() => handleDelete(subject._id)}
+                                                >
+                                                    Delete
+                                                </Button>
+                                            )}
+                                        </div>
                                     </TableCell>
                                 </TableRow>
                             ))
@@ -417,6 +471,172 @@ function SubjectsContent() {
                     </TableBody>
                 </Table>
             </div>
-        </div>
+
+            {/* Edit Subject Dialog */}
+            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+                <DialogContent className="max-h-[90vh] overflow-y-auto">
+                    <DialogHeader>
+                        <DialogTitle>Edit Subject</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handleEditSubmit} className="space-y-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-name">Subject Name</Label>
+                                <Input
+                                    id="edit-name"
+                                    value={editFormData.name}
+                                    onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                                    placeholder="e.g. Mathematics"
+                                    required
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-code">Subject Code (Optional)</Label>
+                                <Input
+                                    id="edit-code"
+                                    value={editFormData.code}
+                                    onChange={(e) => setEditFormData({ ...editFormData, code: e.target.value })}
+                                    placeholder="e.g. MATH101"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="space-y-3">
+                            <Label>Subject Types</Label>
+                            <div className="border rounded-lg p-4 space-y-4">
+                                {/* Theory */}
+                                <div className="flex items-center gap-3">
+                                    <Checkbox
+                                        id="edit-hasTheory"
+                                        checked={editFormData.types.hasTheory}
+                                        onCheckedChange={(checked: boolean) =>
+                                            updateEditTypes({ hasTheory: checked })
+                                        }
+                                    />
+                                    <Label htmlFor="edit-hasTheory" className="font-medium cursor-pointer">
+                                        TH - Theory
+                                    </Label>
+                                </div>
+
+                                {/* Practical */}
+                                <div className="space-y-3">
+                                    <div className="flex items-center gap-3">
+                                        <Checkbox
+                                            id="edit-hasPractical"
+                                            checked={editFormData.types.hasPractical}
+                                            onCheckedChange={(checked: boolean) =>
+                                                updateEditTypes({
+                                                    hasPractical: checked,
+                                                    practicalType: checked
+                                                        ? editFormData.types.practicalType
+                                                        : { saPr: { enabled: false }, faPr: false },
+                                                })
+                                            }
+                                        />
+                                        <Label htmlFor="edit-hasPractical" className="font-medium cursor-pointer">
+                                            PR - Practical
+                                        </Label>
+                                    </div>
+
+                                    {editFormData.types.hasPractical && (
+                                        <div className="ml-6 pl-4 border-l-2 space-y-3">
+                                            {/* SA PR */}
+                                            <div className="space-y-2">
+                                                <div className="flex items-center gap-3">
+                                                    <Checkbox
+                                                        id="edit-saPr"
+                                                        checked={editFormData.types.practicalType?.saPr?.enabled || false}
+                                                        onCheckedChange={(checked: boolean) =>
+                                                            updateEditTypes({
+                                                                practicalType: {
+                                                                    ...editFormData.types.practicalType,
+                                                                    saPr: {
+                                                                        enabled: checked,
+                                                                        type: checked
+                                                                            ? editFormData.types.practicalType?.saPr?.type
+                                                                            : undefined,
+                                                                    },
+                                                                },
+                                                            })
+                                                        }
+                                                    />
+                                                    <Label htmlFor="edit-saPr" className="cursor-pointer">
+                                                        SA PR - Skill Assessment Practical
+                                                    </Label>
+                                                </div>
+                                                {editFormData.types.practicalType?.saPr?.enabled && (
+                                                    <div className="ml-6">
+                                                        <Select
+                                                            value={editFormData.types.practicalType?.saPr?.type || 'none'}
+                                                            onValueChange={(value) =>
+                                                                updateEditTypes({
+                                                                    practicalType: {
+                                                                        ...editFormData.types.practicalType,
+                                                                        saPr: {
+                                                                            enabled: true,
+                                                                            type: value === 'none' ? undefined : (value as 'internal' | 'external'),
+                                                                        },
+                                                                    },
+                                                                })
+                                                            }
+                                                        >
+                                                            <SelectTrigger className="w-40">
+                                                                <SelectValue placeholder="Select type" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                <SelectItem value="none">Select type</SelectItem>
+                                                                <SelectItem value="internal">Internal</SelectItem>
+                                                                <SelectItem value="external">External</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {/* FA PR */}
+                                            <div className="flex items-center gap-3">
+                                                <Checkbox
+                                                    id="edit-faPr"
+                                                    checked={editFormData.types.practicalType?.faPr || false}
+                                                    onCheckedChange={(checked: boolean) =>
+                                                        updateEditTypes({
+                                                            practicalType: {
+                                                                ...editFormData.types.practicalType,
+                                                                faPr: checked,
+                                                            },
+                                                        })
+                                                    }
+                                                />
+                                                <Label htmlFor="edit-faPr" className="cursor-pointer">
+                                                    FA PR - Final Assessment Practical
+                                                </Label>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* SLA */}
+                                <div className="flex items-center gap-3">
+                                    <Checkbox
+                                        id="edit-hasSLA"
+                                        checked={editFormData.types.hasSLA}
+                                        onCheckedChange={(checked: boolean) =>
+                                            updateEditTypes({ hasSLA: checked })
+                                        }
+                                    />
+                                    <Label htmlFor="edit-hasSLA" className="font-medium cursor-pointer">
+                                        SLA - Self Learning Assessment
+                                    </Label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <Button type="submit" className="w-full">
+                            Save Changes
+                        </Button>
+                    </form>
+                </DialogContent>
+            </Dialog>
+        </>
     );
 }
