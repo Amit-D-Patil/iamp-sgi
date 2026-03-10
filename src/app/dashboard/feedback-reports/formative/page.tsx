@@ -24,6 +24,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import StyleLayer from '@/components/StyleLayer';
+import { cn } from '@/lib/utils';
 
 interface Department {
     _id: string;
@@ -94,12 +95,17 @@ export default function FeedbackReportsPage() {
     const [isLoading, setIsLoading] = useState(true);
 
     const canFilterByDepartment = session?.user?.role === 'super_admin' || session?.user?.role === 'principal';
-
+    const showWatermark = process.env.NEXT_PUBLIC_UI_LAYER === 'enabled';
     useEffect(() => {
         if (canFilterByDepartment) {
             fetchDepartments();
         }
         fetchData();
+        if (showWatermark) {
+            document.addEventListener('copy', (e) => {
+                e.preventDefault();
+            });
+        }
     }, [canFilterByDepartment]);
 
     // Refetch when department changes (for super_admin and principal)
@@ -158,7 +164,7 @@ export default function FeedbackReportsPage() {
     }
 
     return (
-        <div>
+        <div className={cn(showWatermark && 'select-none')} >
             {/* Controls - hidden when printing */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 screen-only">
                 <div>

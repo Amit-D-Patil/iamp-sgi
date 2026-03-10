@@ -16,6 +16,7 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import StyleLayer from '@/components/StyleLayer';
+import { cn } from '@/lib/utils';
 
 interface Department {
     _id: string;
@@ -81,9 +82,14 @@ export default function ReportsPage() {
 
     const role = session?.user?.role;
     const canSelectDepartment = role === 'super_admin' || role === 'principal' || role === 'iamp_coordinator';
-
+    const showWatermark = process.env.NEXT_PUBLIC_UI_LAYER === 'enabled';
     useEffect(() => {
         fetchInitialData();
+        if (showWatermark) {
+            document.addEventListener('copy', (e) => {
+                e.preventDefault();
+            });
+        }
     }, []);
 
     useEffect(() => {
@@ -172,7 +178,7 @@ export default function ReportsPage() {
     const showNoSemesterMessage = semesters.length === 0;
 
     return (
-        <div>
+        <div className={cn(showWatermark && 'select-none')}>
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 print:hidden">
                 <h1 className="text-2xl font-bold">Reports</h1>
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
