@@ -47,6 +47,8 @@ interface Submission {
     session: { _id: string; title: string };
     status: 'pending' | 'approved' | 'rejected';
     rejectionReason?: string;
+    rejectedSet?: '1' | '2' | 'both';
+    yearAndDiv: string;
     set1Name: string;
     set2Name: string;
     createdAt: string;
@@ -68,6 +70,7 @@ export default function PaperSubmissionsPage() {
     const [isUploadOpen, setIsUploadOpen] = useState(false);
     const [selectedSession, setSelectedSession] = useState('');
     const [selectedSubject, setSelectedSubject] = useState('');
+    const [yearAndDiv, setYearAndDiv] = useState('');
     const [set1File, setSet1File] = useState<File | null>(null);
     const [set2File, setSet2File] = useState<File | null>(null);
     const [uploading, setUploading] = useState(false);
@@ -100,18 +103,28 @@ export default function PaperSubmissionsPage() {
             setReuploadSubmission(resubmit);
             setSelectedSession((resubmit.session as unknown as { _id: string })._id || '');
             setSelectedSubject((resubmit.subject as unknown as { _id: string })._id || '');
+            setYearAndDiv(resubmit.yearAndDiv || '');
         } else {
             setReuploadSubmission(null);
             setSelectedSession(sessions.find((s) => s.isActive)?._id || '');
             setSelectedSubject('');
+            setYearAndDiv('');
         }
         setIsUploadOpen(true);
     };
 
     const handleUpload = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!set1File || !set2File) {
-            setUploadMsg({ type: 'error', text: 'Please select both Set 1 and Set 2 PDF files' });
+        let err = '';
+        const isSet1Req = !reuploadSubmission || !reuploadSubmission.rejectedSet || reuploadSubmission.rejectedSet === '1' || reuploadSubmission.rejectedSet === 'both';
+        const isSet2Req = !reuploadSubmission || !reuploadSubmission.rejectedSet || reuploadSubmission.rejectedSet === '2' || reuploadSubmission.rejectedSet === 'both';
+
+        if (!yearAndDiv.trim()) err = 'Please enter Year & Division (e.g. SY-A)';
+        else if (isSet1Req && !set1File) err = 'Please select Set 1 PDF file';
+        else if (isSet2Req && !set2File) err = 'Please select Set 2 PDF file';
+        
+        if (err) {
+            setUploadMsg({ type: 'error', text: err });
             return;
         }
         setUploading(true);
@@ -120,8 +133,9 @@ export default function PaperSubmissionsPage() {
         const formData = new FormData();
         formData.append('sessionId', selectedSession);
         formData.append('subjectId', selectedSubject);
-        formData.append('set1', set1File);
-        formData.append('set2', set2File);
+        formData.append('yearAndDiv', yearAndDiv.trim());
+        if (set1File) formData.append('set1', set1File);
+        if (set2File) formData.append('set2', set2File);
 
         const res = await fetch('/api/paper-submissions', {
             method: 'POST',
@@ -217,6 +231,7 @@ export default function PaperSubmissionsPage() {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Session</TableHead>
+                                <TableHead>Year/Div</TableHead>
                                 <TableHead>Subject</TableHead>
                                 <TableHead>Set 1</TableHead>
                                 <TableHead>Set 2</TableHead>
@@ -233,6 +248,11 @@ export default function PaperSubmissionsPage() {
                                     <TableRow key={sub._id}>
                                         <TableCell className="font-medium text-sm">
                                             {sub.session?.title}
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant="outline" className="text-xs bg-gray-50">
+                                                {sub.yearAndDiv}
+                                            </Badge>
                                         </TableCell>
                                         <TableCell>
                                             <span className="font-medium">{sub.subject?.name}</span>
@@ -307,8 +327,8 @@ export default function PaperSubmissionsPage() {
                             {reuploadSubmission ? 'Resubmit Papers' : 'Submit Papers'}
                         </DialogTitle>
                     </DialogHeader>
-                    <p className="text-sm text-muted-foreground">
-                        Upload 2 PDF sets for the selected subject. Each file must be under 10 MB.
+                    <p className="text-sm text-muted-foreground mb-4">
+                        Upload PDF sets for the selected subject. Each file must be under 10 MB.
                     </p>
                     <form onSubmit={handleUpload} className="space-y-4">
                         {/* Session */}
@@ -353,58 +373,86 @@ export default function PaperSubmissionsPage() {
                             </Select>
                         </div>
 
+                        {/* Year & Division */}
+                        <div className="space-y-2">
+                            <Label htmlFor="yearAndDiv">Year & Division</Label>
+                            <input
+                                id="yearAndDiv"
+                                type="text"
+                                placeholder="e.g. SY-A, TE-B"
+                                disabled={!!reuploadSubmission}
+                                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background disabled:cursor-not-allowed disabled:opacity-50"
+                                value={yearAndDiv}
+                                onChange={(e) => setYearAndDiv(e.target.value)}
+                            />
+                        </div>
+
                         {/* Set 1 */}
                         <div className="space-y-2">
                             <Label htmlFor="set1">Set 1 (PDF)</Label>
-                            <div className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${set1File ? 'border-green-400 bg-green-50' : 'border-muted-foreground/30 hover:border-primary/50'}`}>
-                                <input
-                                    id="set1"
-                                    type="file"
-                                    accept=".pdf,application/pdf"
-                                    className="hidden"
-                                    onChange={(e) => setSet1File(e.target.files?.[0] || null)}
-                                />
-                                <label htmlFor="set1" className="cursor-pointer">
-                                    {set1File ? (
-                                        <div className="flex items-center justify-center gap-2 text-green-700">
-                                            <FileText className="h-5 w-5" />
-                                            <span className="text-sm font-medium">{set1File.name}</span>
-                                        </div>
-                                    ) : (
-                                        <div className="text-muted-foreground">
-                                            <Upload className="h-8 w-8 mx-auto mb-1 opacity-50" />
-                                            <p className="text-sm">Click to upload Set 1 PDF</p>
-                                        </div>
-                                    )}
-                                </label>
-                            </div>
+                            {reuploadSubmission && reuploadSubmission.rejectedSet === '2' ? (
+                                <div className="border-2 rounded-lg p-4 flex items-center justify-center gap-2 bg-gray-50 border-gray-200 text-gray-500 cursor-not-allowed">
+                                    <CheckCircle className="h-5 w-5 text-green-500" />
+                                    <span className="text-sm font-medium">Set 1 is approved</span>
+                                </div>
+                            ) : (
+                                <div className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${set1File ? 'border-green-400 bg-green-50' : 'border-muted-foreground/30 hover:border-primary/50'}`}>
+                                    <input
+                                        id="set1"
+                                        type="file"
+                                        accept=".pdf,application/pdf"
+                                        className="hidden"
+                                        onChange={(e) => setSet1File(e.target.files?.[0] || null)}
+                                    />
+                                    <label htmlFor="set1" className="cursor-pointer">
+                                        {set1File ? (
+                                            <div className="flex items-center justify-center gap-2 text-green-700">
+                                                <FileText className="h-5 w-5" />
+                                                <span className="text-sm font-medium">{set1File.name}</span>
+                                            </div>
+                                        ) : (
+                                            <div className="text-muted-foreground">
+                                                <Upload className="h-8 w-8 mx-auto mb-1 opacity-50" />
+                                                <p className="text-sm">Click to upload Set 1 PDF</p>
+                                            </div>
+                                        )}
+                                    </label>
+                                </div>
+                            )}
                         </div>
 
                         {/* Set 2 */}
                         <div className="space-y-2">
                             <Label htmlFor="set2">Set 2 (PDF)</Label>
-                            <div className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${set2File ? 'border-green-400 bg-green-50' : 'border-muted-foreground/30 hover:border-primary/50'}`}>
-                                <input
-                                    id="set2"
-                                    type="file"
-                                    accept=".pdf,application/pdf"
-                                    className="hidden"
-                                    onChange={(e) => setSet2File(e.target.files?.[0] || null)}
-                                />
-                                <label htmlFor="set2" className="cursor-pointer">
-                                    {set2File ? (
-                                        <div className="flex items-center justify-center gap-2 text-green-700">
-                                            <FileText className="h-5 w-5" />
-                                            <span className="text-sm font-medium">{set2File.name}</span>
-                                        </div>
-                                    ) : (
-                                        <div className="text-muted-foreground">
-                                            <Upload className="h-8 w-8 mx-auto mb-1 opacity-50" />
-                                            <p className="text-sm">Click to upload Set 2 PDF</p>
-                                        </div>
-                                    )}
-                                </label>
-                            </div>
+                            {reuploadSubmission && reuploadSubmission.rejectedSet === '1' ? (
+                                <div className="border-2 rounded-lg p-4 flex items-center justify-center gap-2 bg-gray-50 border-gray-200 text-gray-500 cursor-not-allowed">
+                                    <CheckCircle className="h-5 w-5 text-green-500" />
+                                    <span className="text-sm font-medium">Set 2 is approved</span>
+                                </div>
+                            ) : (
+                                <div className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${set2File ? 'border-green-400 bg-green-50' : 'border-muted-foreground/30 hover:border-primary/50'}`}>
+                                    <input
+                                        id="set2"
+                                        type="file"
+                                        accept=".pdf,application/pdf"
+                                        className="hidden"
+                                        onChange={(e) => setSet2File(e.target.files?.[0] || null)}
+                                    />
+                                    <label htmlFor="set2" className="cursor-pointer">
+                                        {set2File ? (
+                                            <div className="flex items-center justify-center gap-2 text-green-700">
+                                                <FileText className="h-5 w-5" />
+                                                <span className="text-sm font-medium">{set2File.name}</span>
+                                            </div>
+                                        ) : (
+                                            <div className="text-muted-foreground">
+                                                <Upload className="h-8 w-8 mx-auto mb-1 opacity-50" />
+                                                <p className="text-sm">Click to upload Set 2 PDF</p>
+                                            </div>
+                                        )}
+                                    </label>
+                                </div>
+                            )}
                         </div>
 
                         {uploadMsg && (

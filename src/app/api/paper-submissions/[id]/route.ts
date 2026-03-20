@@ -17,7 +17,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
         await connectDB();
         const { id } = await params;
-        const { action, rejectionReason } = await request.json();
+        const { action, rejectionReason, rejectedSet } = await request.json();
 
         if (!['approve', 'reject'].includes(action)) {
             return NextResponse.json({ error: 'action must be approve or reject' }, { status: 400 });
@@ -25,6 +25,10 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
         if (action === 'reject' && !rejectionReason?.trim()) {
             return NextResponse.json({ error: 'Rejection reason is required' }, { status: 400 });
+        }
+
+        if (action === 'reject' && !['1', '2', 'both'].includes(rejectedSet)) {
+            return NextResponse.json({ error: 'rejectedSet must be 1, 2, or both' }, { status: 400 });
         }
 
         // Verify HOD owns the department of this submission
@@ -47,8 +51,10 @@ export async function PATCH(request: NextRequest, { params }: Params) {
         submission.reviewedAt = new Date();
         if (action === 'reject') {
             submission.rejectionReason = rejectionReason.trim();
+            submission.rejectedSet = rejectedSet;
         } else {
             submission.rejectionReason = undefined;
+            submission.rejectedSet = undefined;
         }
         await submission.save();
 

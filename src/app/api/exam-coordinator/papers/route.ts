@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import PaperSubmission from '@/models/PaperSubmission';
-import Subject from '@/models/Subject';
 import User from '@/models/User';
 
 // GET - Get approved submissions for Exam Coordinator by department and session
@@ -34,26 +33,21 @@ export async function GET(request: NextRequest) {
         .sort({ createdAt: -1 })
         .select('-set1BlobUrl -set2BlobUrl'); // Hide raw blob URLs
 
-        // To make it easy for UI, we could also fetch all subjects and indicate which ones are approved vs missing
-        // Similar to the report logic
-        const subjects = await Subject.find({ department: departmentId, isActive: true })
-            .sort({ name: 1 })
-            .select('name code');
-
-        // Map subjects to submissions to show full status
-        const report = subjects.map(subject => {
-            const submission = submissions.find((s: any) => s.subject && s.subject._id.toString() === subject._id.toString()) as any;
+        // Only return subjects that actually have an approved submission
+        const report = submissions.map((submission: any) => {
+            const subject = submission.subject as any;
             return {
                 subjectId: subject._id,
                 subjectname: subject.name,
                 subjectCode: subject.code,
-                hasApprovedSubmission: !!submission,
-                submissionId: submission?._id || null,
-                facultyName: submission?.faculty?.name || '-',
-                set1Name: submission?.set1Name || null,
-                set2Name: submission?.set2Name || null,
-                finalSet: submission?.finalSet || null,
-                finalSetSelectedAt: submission?.finalSetSelectedAt || null
+                hasApprovedSubmission: true,
+                submissionId: submission._id,
+                yearAndDiv: submission.yearAndDiv || '-',
+                facultyName: submission.faculty?.name || '-',
+                set1Name: submission.set1Name,
+                set2Name: submission.set2Name,
+                finalSet: submission.finalSet || null,
+                finalSetSelectedAt: submission.finalSetSelectedAt || null
             };
         });
 

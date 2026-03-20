@@ -64,18 +64,52 @@ export async function POST(request: NextRequest) {
         const formData = await request.formData();
         const sessionId = formData.get('sessionId') as string;
         const subjectId = formData.get('subjectId') as string;
+        const yearAndDiv = formData.get('yearAndDiv') as string;
         const set1File = formData.get('set1') as File | null;
         const set2File = formData.get('set2') as File | null;
 
-        if (!sessionId || !subjectId || !set1File || !set2File) {
+        // We need to check for existing submission first to know which files are required
+        const existing = await PaperSubmission.findOne({
+            faculty: session.user.id,
+            session: sessionId,
+            subject: subjectId,
+            yearAndDiv: yearAndDiv,
+        });
+
+        if (existing && existing.status !== 'rejected') {
             return NextResponse.json(
-                { error: 'sessionId, subjectId, set1 and set2 files are required' },
-                { status: 400 }
+                { error: 'You have already submitted papers for this subject in this session' },
+                { status: 409 }
             );
         }
 
-        // Validate files are PDFs
+        let isSet1Required = true;
+        let isSet2Required = true;
+
+        if (existing && existing.status === 'rejected') {
+            if (existing.rejectedSet === '1') {
+                isSet2Required = false;
+            } else if (existing.rejectedSet === '2') {
+                isSet1Required = false;
+            }
+        }
+
+        if (!sessionId || !subjectId || !yearAndDiv) {
+            return NextResponse.json(
+                { error: 'sessionId, subjectId, and yearAndDiv are required' },
+                { status: 400 }
+            );
+        }
+        if (isSet1Required && !set1File) {
+            return NextResponse.json({ error: 'Set 1 file is required' }, { status: 400 });
+        }
+        if (isSet2Required && !set2File) {
+            return NextResponse.json({ error: 'Set 2 file is required' }, { status: 400 });
+        }
+
+        // Validate files are PDFs if provided
         for (const file of [set1File, set2File]) {
+            if (!file) continue;
             if (file.type !== 'application/pdf') {
                 return NextResponse.json({ error: 'Only PDF files are allowed' }, { status: 400 });
             }
@@ -100,44 +134,42 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Check for existing non-rejected submission
-        const existing = await PaperSubmission.findOne({
-            faculty: session.user.id,
-            session: sessionId,
-            subject: subjectId,
-        });
 
-        if (existing && existing.status !== 'rejected') {
-            return NextResponse.json(
-                { error: 'You have already submitted papers for this subject in this session' },
-                { status: 409 }
+
+        // Upload provided PDFs to Vercel Blob
+        const timestamp = Date.now();
+        const uploadPromises = [];
+        let blob1Url = '', blob2Url = '';
+
+        if (set1File) {
+            uploadPromises.push(
+                put(`papers/${sessionId}/${subjectId}/${session.user.id}/set1_${timestamp}.pdf`, set1File, { access: 'private' })
+                .then(b => blob1Url = b.url)
             );
         }
-
-        // Upload both PDFs to Vercel Blob
-        const timestamp = Date.now();
-        const [blob1, blob2] = await Promise.all([
-            put(
-                `papers/${sessionId}/${subjectId}/${session.user.id}/set1_${timestamp}.pdf`,
-                set1File,
-                { access: 'private' }
-            ),
-            put(
-                `papers/${sessionId}/${subjectId}/${session.user.id}/set2_${timestamp}.pdf`,
-                set2File,
-                { access: 'private' }
-            ),
-        ]);
+        if (set2File) {
+            uploadPromises.push(
+                put(`papers/${sessionId}/${subjectId}/${session.user.id}/set2_${timestamp}.pdf`, set2File, { access: 'private' })
+                .then(b => blob2Url = b.url)
+            );
+        }
+        
+        await Promise.all(uploadPromises);
 
         let submission;
         if (existing && existing.status === 'rejected') {
             // Update existing rejected submission with new sets
-            existing.set1BlobUrl = blob1.url;
-            existing.set2BlobUrl = blob2.url;
-            existing.set1Name = set1File.name;
-            existing.set2Name = set2File.name;
+            if (set1File) {
+                existing.set1BlobUrl = blob1Url;
+                existing.set1Name = set1File.name;
+            }
+            if (set2File) {
+                existing.set2BlobUrl = blob2Url;
+                existing.set2Name = set2File.name;
+            }
             existing.status = 'pending';
             existing.rejectionReason = undefined;
+            existing.rejectedSet = undefined;
             existing.reviewedBy = undefined;
             existing.reviewedAt = undefined;
             submission = await existing.save();
@@ -147,10 +179,11 @@ export async function POST(request: NextRequest) {
                 faculty: session.user.id,
                 subject: subjectId,
                 department: teacher.department,
-                set1BlobUrl: blob1.url,
-                set2BlobUrl: blob2.url,
-                set1Name: set1File.name,
-                set2Name: set2File.name,
+                yearAndDiv,
+                set1BlobUrl: blob1Url,
+                set2BlobUrl: blob2Url,
+                set1Name: set1File!.name,
+                set2Name: set2File!.name,
                 status: 'pending',
             });
         }
@@ -174,8 +207,14 @@ export async function POST(request: NextRequest) {
         }
 
         return NextResponse.json({ message: 'Papers submitted successfully', submission }, { status: 201 });
-    } catch (error) {
+    } catch (error: any) {
         console.error(error);
+        if (error.code === 11000) {
+            return NextResponse.json(
+                { error: 'A submission for this subject in this session already exists. Try resubmitting or modifying the original.' }, 
+                { status: 409 }
+            );
+        }
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }

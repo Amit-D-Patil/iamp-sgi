@@ -22,6 +22,7 @@ interface ReportItem {
     subjectCode?: string;
     status: 'pending' | 'approved' | 'rejected' | 'not_submitted';
     facultyName: string;
+    yearAndDiv: string;
     submittedAt?: string;
     reviewedAt?: string;
 }
@@ -209,6 +210,7 @@ export default function PaperReportPage() {
                         <TableHeader>
                             <TableRow className="bg-gray-50/50 hover:bg-gray-50/50">
                                 <TableHead className="w-[100px] font-bold">Code</TableHead>
+                                <TableHead className="font-bold">Year/Div</TableHead>
                                 <TableHead className="font-bold">Subject Name</TableHead>
                                 <TableHead className="font-bold">Faculty Name</TableHead>
                                 <TableHead className="font-bold text-center">Status</TableHead>
@@ -229,6 +231,7 @@ export default function PaperReportPage() {
                                     return (
                                         <TableRow key={item.subjectId} className="hover:bg-gray-50/30">
                                             <TableCell className="font-medium">{item.subjectCode || '-'}</TableCell>
+                                            <TableCell>{item.yearAndDiv === '-' ? <span className="text-muted-foreground">-</span> : <Badge variant="outline" className="text-xs bg-gray-50">{item.yearAndDiv}</Badge>}</TableCell>
                                             <TableCell>{item.subjectName}</TableCell>
                                             <TableCell className={item.facultyName === '-' ? 'text-muted-foreground italic' : 'font-medium'}>
                                                 {item.facultyName}

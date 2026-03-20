@@ -7,6 +7,7 @@ export interface IPaperSubmission extends Document {
     faculty: Types.ObjectId;
     subject: Types.ObjectId;
     department: Types.ObjectId;
+    yearAndDiv: string;
     // Internal blob URLs — never sent to client directly
     set1BlobUrl: string;
     set2BlobUrl: string;
@@ -14,6 +15,7 @@ export interface IPaperSubmission extends Document {
     set2Name: string;
     status: PaperSubmissionStatus;
     rejectionReason?: string;
+    rejectedSet?: '1' | '2' | 'both';
     reviewedBy?: Types.ObjectId;
     reviewedAt?: Date;
     finalSet?: 1 | 2;
@@ -45,6 +47,7 @@ const PaperSubmissionSchema = new Schema<IPaperSubmission>(
             ref: 'Department',
             required: true,
         },
+        yearAndDiv: { type: String, required: true },
         set1BlobUrl: { type: String, required: true },
         set2BlobUrl: { type: String, required: true },
         set1Name: { type: String, required: true },
@@ -55,6 +58,10 @@ const PaperSubmissionSchema = new Schema<IPaperSubmission>(
             default: 'pending',
         },
         rejectionReason: { type: String },
+        rejectedSet: {
+            type: String,
+            enum: ['1', '2', 'both'],
+        },
         reviewedBy: { type: Schema.Types.ObjectId, ref: 'User' },
         reviewedAt: { type: Date },
         finalSet: {
@@ -67,11 +74,24 @@ const PaperSubmissionSchema = new Schema<IPaperSubmission>(
     { timestamps: true }
 );
 
-// One submission per faculty per session per subject
-PaperSubmissionSchema.index({ faculty: 1, session: 1, subject: 1 }, { unique: true });
+// One submission per faculty per session per subject per year/div
+PaperSubmissionSchema.index({ faculty: 1, session: 1, subject: 1, yearAndDiv: 1 }, { unique: true });
+
+// In development, clear the model cache to ensure latest schema is used
+if (process.env.NODE_ENV !== 'production' && mongoose.models.PaperSubmission) {
+    delete mongoose.models.PaperSubmission;
+}
 
 const PaperSubmission: Model<IPaperSubmission> =
     mongoose.models.PaperSubmission ||
     mongoose.model<IPaperSubmission>('PaperSubmission', PaperSubmissionSchema);
 
+// Force index sync to drop the old `faculty_1_session_1_subject_1` index that blocked multiple divisions
+if (process.env.NODE_ENV !== 'production' && !mongoose.models.PaperSubmission) {
+    PaperSubmission.syncIndexes()
+        .then(() => console.log('PaperSubmission indexes synced!'))
+        .catch((err) => console.error('PaperSubmission index sync error:', err));
+}
+
 export default PaperSubmission;
+

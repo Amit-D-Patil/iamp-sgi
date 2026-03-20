@@ -37,8 +37,10 @@ interface Submission {
     department: { name: string; shortName: string };
     status: 'pending' | 'approved' | 'rejected';
     rejectionReason?: string;
+    rejectedSet?: '1' | '2' | 'both';
     reviewedBy?: { name: string };
     reviewedAt?: string;
+    yearAndDiv: string;
     set1Name: string;
     set2Name: string;
     createdAt: string;
@@ -58,6 +60,7 @@ export default function PaperReviewPage() {
     const [reviewing, setReviewing] = useState<Submission | null>(null);
     const [action, setAction] = useState<'approve' | 'reject' | null>(null);
     const [rejectionReason, setRejectionReason] = useState('');
+    const [rejectedSet, setRejectedSet] = useState<'1' | '2' | 'both'>('both');
     const [submitting, setSubmitting] = useState(false);
     const [msg, setMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -75,6 +78,7 @@ export default function PaperReviewPage() {
         setReviewing(sub);
         setAction(act);
         setRejectionReason('');
+        setRejectedSet('both');
         setMsg(null);
     };
 
@@ -87,7 +91,7 @@ export default function PaperReviewPage() {
         const res = await fetch(`/api/paper-submissions/${reviewing._id}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action, rejectionReason }),
+            body: JSON.stringify({ action, rejectionReason, rejectedSet }),
         });
         const data = await res.json();
         setSubmitting(false);
@@ -167,6 +171,7 @@ export default function PaperReviewPage() {
                         <TableHeader>
                             <TableRow>
                                 <TableHead>Faculty</TableHead>
+                                <TableHead>Year/Div</TableHead>
                                 <TableHead>Subject</TableHead>
                                 <TableHead>Session</TableHead>
                                 <TableHead>Papers</TableHead>
@@ -184,6 +189,11 @@ export default function PaperReviewPage() {
                                         <TableCell>
                                             <p className="font-medium">{sub.faculty?.name}</p>
                                             <p className="text-xs text-muted-foreground">{sub.faculty?.phone}</p>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Badge variant="outline" className="text-xs bg-gray-50">
+                                                {sub.yearAndDiv}
+                                            </Badge>
                                         </TableCell>
                                         <TableCell>
                                             <span className="font-medium">{sub.subject?.name}</span>
@@ -220,9 +230,14 @@ export default function PaperReviewPage() {
                                                 {cfg.label}
                                             </Badge>
                                             {sub.status === 'rejected' && sub.rejectionReason && (
-                                                <p className="text-xs text-muted-foreground mt-1 max-w-[180px]">
-                                                    {sub.rejectionReason}
-                                                </p>
+                                                <div className="text-xs text-muted-foreground mt-1 max-w-[180px]">
+                                                    <p>{sub.rejectionReason}</p>
+                                                    {sub.rejectedSet && (
+                                                        <p className="mt-0.5 font-medium">
+                                                            Rejected: {sub.rejectedSet === 'both' ? 'Both Sets' : `Set ${sub.rejectedSet}`}
+                                                        </p>
+                                                    )}
+                                                </div>
                                             )}
                                             {sub.reviewedBy && (
                                                 <p className="text-xs text-muted-foreground mt-0.5">
@@ -302,16 +317,31 @@ export default function PaperReviewPage() {
 
                             <form onSubmit={handleReview} className="space-y-4">
                                 {action === 'reject' && (
-                                    <div className="space-y-2">
-                                        <Label htmlFor="reason">Reason for Rejection *</Label>
-                                        <Textarea
-                                            id="reason"
-                                            placeholder="Explain what needs to be corrected..."
-                                            value={rejectionReason}
-                                            onChange={(e) => setRejectionReason(e.target.value)}
-                                            required
-                                            rows={3}
-                                        />
+                                    <div className="space-y-4">
+                                        <div className="space-y-2">
+                                            <Label>Which set(s) needs correction? *</Label>
+                                            <Select value={rejectedSet} onValueChange={(v: '1' | '2' | 'both') => setRejectedSet(v)}>
+                                                <SelectTrigger>
+                                                    <SelectValue />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="both">Both Sets</SelectItem>
+                                                    <SelectItem value="1">Set 1 ({reviewing?.set1Name})</SelectItem>
+                                                    <SelectItem value="2">Set 2 ({reviewing?.set2Name})</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="reason">Reason for Rejection *</Label>
+                                            <Textarea
+                                                id="reason"
+                                                placeholder="Explain what needs to be corrected..."
+                                                value={rejectionReason}
+                                                onChange={(e) => setRejectionReason(e.target.value)}
+                                                required
+                                                rows={3}
+                                            />
+                                        </div>
                                     </div>
                                 )}
 

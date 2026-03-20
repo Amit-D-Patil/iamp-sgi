@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
             department: departmentId,
         })
             .populate('faculty', 'name phone')
-            .select('subject status faculty reviewedAt');
+            .select('subject status faculty reviewedAt yearAndDiv');
 
         // 4. Map subjects to their submission status
         const report = subjects.map(subject => {
@@ -52,6 +52,7 @@ export async function GET(request: NextRequest) {
                 subjectCode: subject.code,
                 status: submission ? submission.status : 'not_submitted',
                 facultyName: submission?.faculty?.name || '-',
+                yearAndDiv: submission?.yearAndDiv || '-',
                 submittedAt: submission ? submission.createdAt : null, // Mongoose includes createdAt by default if timestamps: true
                 reviewedAt: submission?.reviewedAt || null
             };

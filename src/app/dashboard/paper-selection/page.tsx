@@ -24,6 +24,7 @@ interface PaperItem {
     subjectId: string;
     subjectname: string;
     subjectCode?: string;
+    yearAndDiv: string;
     hasApprovedSubmission: boolean;
     submissionId: string | null;
     facultyName: string;
@@ -191,6 +192,7 @@ export default function PaperSelectionPage() {
                     <TableHeader>
                         <TableRow className="bg-gray-50/50">
                             <TableHead className="w-[120px]">Code</TableHead>
+                            <TableHead>Year/Div</TableHead>
                             <TableHead>Subject</TableHead>
                             <TableHead>Faculty</TableHead>
                             <TableHead className="text-center">Set 1</TableHead>
@@ -221,6 +223,11 @@ export default function PaperSelectionPage() {
                             papers.map(p => (
                                 <TableRow key={p.subjectId}>
                                     <TableCell className="font-medium text-xs">{p.subjectCode || '-'}</TableCell>
+                                    <TableCell>
+                                        <Badge variant="outline" className="text-xs bg-gray-50">
+                                            {p.yearAndDiv}
+                                        </Badge>
+                                    </TableCell>
                                     <TableCell className="font-medium">{p.subjectname}</TableCell>
                                     
                                     {!p.hasApprovedSubmission ? (
