@@ -16,6 +16,9 @@ export interface IPaperSubmission extends Document {
     rejectionReason?: string;
     reviewedBy?: Types.ObjectId;
     reviewedAt?: Date;
+    finalSet?: 1 | 2;
+    finalSetSelectedBy?: Types.ObjectId;
+    finalSetSelectedAt?: Date;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -54,6 +57,12 @@ const PaperSubmissionSchema = new Schema<IPaperSubmission>(
         rejectionReason: { type: String },
         reviewedBy: { type: Schema.Types.ObjectId, ref: 'User' },
         reviewedAt: { type: Date },
+        finalSet: {
+            type: Number,
+            enum: [1, 2],
+        },
+        finalSetSelectedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+        finalSetSelectedAt: { type: Date },
     },
     { timestamps: true }
 );

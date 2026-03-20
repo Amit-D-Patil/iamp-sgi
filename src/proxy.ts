@@ -19,11 +19,12 @@ const routePermissions: Record<string, string[]> = {
     '/dashboard/reports': ['super_admin', 'iamp_coordinator', 'principal', 'hod'],
     '/dashboard/paper-review': ['hod'],
     '/dashboard/paper-report': ['hod'],
+    '/dashboard/paper-selection': ['exam_coordinator'],
 
     // Feedback related
     '/dashboard/feedback-reports': ['super_admin', 'feedback_coordinator', 'principal'],
     '/dashboard/paper-submissions': ['faculty'],
-    '/dashboard/notifications': ['super_admin', 'iamp_coordinator', 'feedback_coordinator', 'principal', 'hod', 'faculty'],
+    '/dashboard/notifications': ['super_admin', 'iamp_coordinator', 'feedback_coordinator', 'principal', 'hod', 'faculty', 'exam_coordinator'],
 
     // Data management
     '/dashboard/classes': ['iamp_coordinator', 'feedback_coordinator'],
@@ -31,7 +32,7 @@ const routePermissions: Record<string, string[]> = {
     '/dashboard/teachers': ['iamp_coordinator', 'feedback_coordinator'],
 
     // Dashboard - all authenticated users
-    '/dashboard': ['super_admin', 'iamp_coordinator', 'feedback_coordinator', 'principal', 'hod', 'faculty'],
+    '/dashboard': ['super_admin', 'iamp_coordinator', 'feedback_coordinator', 'principal', 'hod', 'faculty', 'exam_coordinator'],
 };
 
 export async function proxy(request: NextRequest) {

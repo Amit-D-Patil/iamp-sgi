@@ -51,6 +51,7 @@ const roleLabels: Record<string, string> = {
     feedback_coordinator: 'Feedback Coordinator',
     principal: 'Director',
     hod: 'HOD',
+    exam_coordinator: 'Exam Coordinator',
 };
 
 const roleColors: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
@@ -59,6 +60,7 @@ const roleColors: Record<string, 'default' | 'secondary' | 'destructive' | 'outl
     feedback_coordinator: 'default',
     principal: 'secondary',
     hod: 'outline',
+    exam_coordinator: 'default',
 };
 
 export default function UsersPage() {
@@ -158,6 +160,7 @@ export default function UsersPage() {
                             <SelectItem value="feedback_coordinator">Feedback Coordinators</SelectItem>
                             <SelectItem value="principal">Principals</SelectItem>
                             <SelectItem value="hod">HODs</SelectItem>
+                            <SelectItem value="exam_coordinator">Exam Coordinators</SelectItem>
                         </SelectContent>
                     </Select>
                     <Dialog open={isOpen} onOpenChange={setIsOpen}>
@@ -185,6 +188,7 @@ export default function UsersPage() {
                                             <SelectItem value="feedback_coordinator">Feedback Coordinator</SelectItem>
                                             <SelectItem value="principal">Principal</SelectItem>
                                             <SelectItem value="hod">HOD</SelectItem>
+                                            <SelectItem value="exam_coordinator">Exam Coordinator</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>

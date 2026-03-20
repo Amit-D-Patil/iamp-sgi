@@ -44,6 +44,11 @@ export async function GET(request: NextRequest, { params }: Params) {
             if (submission.department.toString() !== hodUser?.department?.toString()) {
                 return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
             }
+        } else if (role === 'exam_coordinator') {
+            // Exam coordinator can view ANY department's submissions, but ONLY if approved
+            if (submission.status !== 'approved') {
+                return NextResponse.json({ error: 'Forbidden. Paper is not approved yet.' }, { status: 403 });
+            }
         } else if (role !== 'super_admin') {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }

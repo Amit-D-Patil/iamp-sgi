@@ -25,30 +25,29 @@ export async function GET(request: NextRequest) {
         // Get user's department
         const user = await User.findById(session.user.id);
 
-        // Super admin and principal can see all teachers or filter by department
-        let teachers;
-        if (session.user.role === 'super_admin' || session.user.role === 'principal') {
-            if (departmentParam) {
-                // Filter by specific department
-                teachers = await Teacher.find({ department: departmentParam })
-                    .populate('department', 'name shortName')
-                    .sort({ createdAt: -1 });
-            } else {
-                // Return all teachers
-                teachers = await Teacher.find()
-                    .populate('department', 'name shortName')
-                    .sort({ createdAt: -1 });
-            }
-        } else {
-            if (!user?.department) {
-                return NextResponse.json({ error: 'No department assigned' }, { status: 400 });
-            }
-            teachers = await Teacher.find({ department: user.department })
-                .populate('department', 'name shortName')
-                .sort({ createdAt: -1 });
+        // Fetch teachers
+        const query = (session.user.role === 'super_admin' || session.user.role === 'principal')
+            ? (departmentParam ? { department: departmentParam } : {})
+            : { department: user?.department };
+
+        if (!query.department && !(session.user.role === 'super_admin' || session.user.role === 'principal')) {
+            return NextResponse.json({ error: 'No department assigned' }, { status: 400 });
         }
 
-        return NextResponse.json({ teachers }, { status: 200 });
+        const teachers = await Teacher.find(query)
+            .populate('department', 'name shortName')
+            .sort({ createdAt: -1 });
+
+        // Check which teachers have logins
+        const facultyUsers = await User.find({ role: 'faculty', department: query.department || { $exists: true } });
+        const facultyPhones = new Set(facultyUsers.map(u => u.phone));
+
+        const teachersWithLoginStatus = teachers.map(teacher => ({
+            ...teacher.toObject(),
+            hasLogin: teacher.phone ? facultyPhones.has(teacher.phone) : false
+        }));
+
+        return NextResponse.json({ teachers: teachersWithLoginStatus }, { status: 200 });
     } catch (error) {
         console.error('Error fetching teachers:', error);
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

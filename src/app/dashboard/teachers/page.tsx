@@ -77,6 +77,7 @@ interface Teacher {
     phone?: string;
     email?: string;
     isActive: boolean;
+    hasLogin?: boolean;
     createdAt: string;
 }
 
@@ -382,6 +383,7 @@ function TeachersContent({ userRole }: { userRole: string }) {
             if (res.ok) {
                 setLoginMsg({ type: 'success', text: 'Login created successfully! Teacher can now log in using their phone number.' });
                 setLoginFormData({ phone: '', password: '', confirmPassword: '' });
+                fetchData();
             } else {
                 setLoginMsg({ type: 'error', text: data.error || 'Failed to create login' });
             }
@@ -610,22 +612,25 @@ function TeachersContent({ userRole }: { userRole: string }) {
                                             </Button>
                                             {isIampCoordinator && (
                                                 <>
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        className="text-blue-600 border-blue-300 hover:bg-blue-50"
-                                                        onClick={() => openCreateLogin(teacher)}
-                                                    >
-                                                        Create Login
-                                                    </Button>
-                                                    <Button
-                                                        variant="outline"
-                                                        size="sm"
-                                                        className="text-orange-600 border-orange-300 hover:bg-orange-50"
-                                                        onClick={() => openResetPw(teacher)}
-                                                    >
-                                                        Reset Password
-                                                    </Button>
+                                                    {!teacher.hasLogin ? (
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                                                            onClick={() => openCreateLogin(teacher)}
+                                                        >
+                                                            Create Login
+                                                        </Button>
+                                                    ) : (
+                                                        <Button
+                                                            variant="outline"
+                                                            size="sm"
+                                                            className="text-orange-600 border-orange-300 hover:bg-orange-50"
+                                                            onClick={() => openResetPw(teacher)}
+                                                        >
+                                                            Reset Password
+                                                        </Button>
+                                                    )}
                                                 </>
                                             )}
                                             {canDelete && (

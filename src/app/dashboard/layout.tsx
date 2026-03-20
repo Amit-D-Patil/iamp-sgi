@@ -81,12 +81,13 @@ const navGroups: NavGroup[] = [
     },
     {
         label: 'Paper Submission',
-        roles: ['super_admin', 'faculty', 'hod'],
+        roles: ['super_admin', 'faculty', 'hod', 'exam_coordinator'],
         items: [
             { href: '/dashboard/paper-sessions', label: 'Sessions', roles: ['super_admin'] },
             { href: '/dashboard/paper-submissions', label: 'Submit Papers', roles: ['faculty'] },
             { href: '/dashboard/paper-review', label: 'Review Papers', roles: ['hod'] },
             { href: '/dashboard/paper-report', label: 'Submission Report', roles: ['hod'] },
+            { href: '/dashboard/paper-selection', label: 'Paper Selection', roles: ['exam_coordinator'] },
         ],
     },
     {
