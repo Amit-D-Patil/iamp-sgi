@@ -12,21 +12,26 @@ const routePermissions: Record<string, string[]> = {
     '/dashboard/questions': ['super_admin'],
     '/dashboard/feedback-sessions': ['super_admin'],
     '/dashboard/text-comments': ['super_admin', 'principal'],
+    '/dashboard/paper-sessions': ['super_admin'],
 
     // IAMC related
     '/dashboard/supervision': ['iamp_coordinator'],
     '/dashboard/reports': ['super_admin', 'iamp_coordinator', 'principal', 'hod'],
+    '/dashboard/paper-review': ['hod'],
+    '/dashboard/paper-report': ['hod'],
 
     // Feedback related
     '/dashboard/feedback-reports': ['super_admin', 'feedback_coordinator', 'principal'],
+    '/dashboard/paper-submissions': ['faculty'],
+    '/dashboard/notifications': ['super_admin', 'iamp_coordinator', 'feedback_coordinator', 'principal', 'hod', 'faculty'],
 
     // Data management
     '/dashboard/classes': ['iamp_coordinator', 'feedback_coordinator'],
-    '/dashboard/subjects': ['iamp_coordinator', 'feedback_coordinator'],
+    '/dashboard/subjects': ['iamp_coordinator', 'feedback_coordinator', 'faculty'],
     '/dashboard/teachers': ['iamp_coordinator', 'feedback_coordinator'],
 
     // Dashboard - all authenticated users
-    '/dashboard': ['super_admin', 'iamp_coordinator', 'feedback_coordinator', 'principal', 'hod'],
+    '/dashboard': ['super_admin', 'iamp_coordinator', 'feedback_coordinator', 'principal', 'hod', 'faculty'],
 };
 
 export async function proxy(request: NextRequest) {

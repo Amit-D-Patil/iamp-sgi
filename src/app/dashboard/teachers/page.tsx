@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -80,14 +81,16 @@ interface Teacher {
 }
 
 export default function TeachersPage() {
+    const { data: session, status } = useSession();
+    const role = status === 'authenticated' ? (session?.user?.role ?? '') : '';
     return (
         <Suspense fallback={<div>Loading...</div>}>
-            <TeachersContent />
+            <TeachersContent userRole={role} />
         </Suspense>
     );
 }
 
-function TeachersContent() {
+function TeachersContent({ userRole }: { userRole: string }) {
     const searchParams = useSearchParams();
     const canDelete = searchParams.get('delete') === 'true';
 
@@ -117,6 +120,15 @@ function TeachersContent() {
         phone: '',
         email: '',
     });
+
+    // Create / Reset login dialogs
+    const isIampCoordinator = userRole === 'iamp_coordinator';
+    const [isCreateLoginOpen, setIsCreateLoginOpen] = useState(false);
+    const [isResetPwOpen, setIsResetPwOpen] = useState(false);
+    const [loginTeacher, setLoginTeacher] = useState<Teacher | null>(null);
+    const [loginFormData, setLoginFormData] = useState({ phone: '', password: '', confirmPassword: '' });
+    const [resetPassword, setResetPassword] = useState({ newPassword: '', confirmPassword: '' });
+    const [loginMsg, setLoginMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
     // Mappings dialog
     const [isMappingOpen, setIsMappingOpen] = useState(false);
@@ -340,6 +352,68 @@ function TeachersContent() {
         }
     };
 
+    const openCreateLogin = (teacher: Teacher) => {
+        setLoginTeacher(teacher);
+        setLoginFormData({ phone: teacher.phone || '', password: '', confirmPassword: '' });
+        setLoginMsg(null);
+        setIsCreateLoginOpen(true);
+    };
+
+    const openResetPw = (teacher: Teacher) => {
+        setLoginTeacher(teacher);
+        setResetPassword({ newPassword: '', confirmPassword: '' });
+        setLoginMsg(null);
+        setIsResetPwOpen(true);
+    };
+
+    const handleCreateLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (loginFormData.password !== loginFormData.confirmPassword) {
+            setLoginMsg({ type: 'error', text: 'Passwords do not match' });
+            return;
+        }
+        try {
+            const res = await fetch(`/api/teachers/${loginTeacher?._id}/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: loginFormData.phone, password: loginFormData.password }),
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setLoginMsg({ type: 'success', text: 'Login created successfully! Teacher can now log in using their phone number.' });
+                setLoginFormData({ phone: '', password: '', confirmPassword: '' });
+            } else {
+                setLoginMsg({ type: 'error', text: data.error || 'Failed to create login' });
+            }
+        } catch {
+            setLoginMsg({ type: 'error', text: 'Something went wrong. Please try again.' });
+        }
+    };
+
+    const handleResetPassword = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (resetPassword.newPassword !== resetPassword.confirmPassword) {
+            setLoginMsg({ type: 'error', text: 'Passwords do not match' });
+            return;
+        }
+        try {
+            const res = await fetch(`/api/teachers/${loginTeacher?._id}/login`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: loginTeacher?.phone, newPassword: resetPassword.newPassword }),
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setLoginMsg({ type: 'success', text: 'Password reset successfully!' });
+                setResetPassword({ newPassword: '', confirmPassword: '' });
+            } else {
+                setLoginMsg({ type: 'error', text: data.error || 'Failed to reset password' });
+            }
+        } catch {
+            setLoginMsg({ type: 'error', text: 'Something went wrong. Please try again.' });
+        }
+    };
+
     const getTypeLabel = (type: string) => {
         const labels: Record<string, string> = {
             theory: 'TH',
@@ -519,7 +593,7 @@ function TeachersContent() {
                                         />
                                     </TableCell>
                                     <TableCell>
-                                        <div className="flex items-center gap-2">
+                                        <div className="flex items-center flex-wrap gap-2">
                                             <Button
                                                 variant="outline"
                                                 size="sm"
@@ -534,6 +608,26 @@ function TeachersContent() {
                                             >
                                                 Mappings
                                             </Button>
+                                            {isIampCoordinator && (
+                                                <>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                                                        onClick={() => openCreateLogin(teacher)}
+                                                    >
+                                                        Create Login
+                                                    </Button>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="text-orange-600 border-orange-300 hover:bg-orange-50"
+                                                        onClick={() => openResetPw(teacher)}
+                                                    >
+                                                        Reset Password
+                                                    </Button>
+                                                </>
+                                            )}
                                             {canDelete && (
                                                 <Button
                                                     variant="destructive"
@@ -544,6 +638,7 @@ function TeachersContent() {
                                                 </Button>
                                             )}
                                         </div>
+
                                     </TableCell>
                                 </TableRow>
                             ))
@@ -827,6 +922,107 @@ function TeachersContent() {
                             )}
                         </div>
                     </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Create Faculty Login Dialog */}
+            <Dialog open={isCreateLoginOpen} onOpenChange={(open) => { setIsCreateLoginOpen(open); setLoginMsg(null); }}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Create Login — {loginTeacher?.name}</DialogTitle>
+                    </DialogHeader>
+                    <p className="text-sm text-muted-foreground">
+                        This will create a <strong>faculty</strong> login so this teacher can sign in to the portal. The phone number is used as the username.
+                    </p>
+                    <form onSubmit={handleCreateLogin} className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="login-phone">Phone Number (username)</Label>
+                            <Input
+                                id="login-phone"
+                                type="tel"
+                                placeholder="e.g. 9876543210"
+                                value={loginFormData.phone}
+                                onChange={(e) => setLoginFormData({ ...loginFormData, phone: e.target.value })}
+                                required
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="login-password">Password</Label>
+                            <Input
+                                id="login-password"
+                                type="password"
+                                placeholder="Min. 6 characters"
+                                value={loginFormData.password}
+                                onChange={(e) => setLoginFormData({ ...loginFormData, password: e.target.value })}
+                                required
+                                minLength={6}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="login-confirm">Confirm Password</Label>
+                            <Input
+                                id="login-confirm"
+                                type="password"
+                                placeholder="Re-enter password"
+                                value={loginFormData.confirmPassword}
+                                onChange={(e) => setLoginFormData({ ...loginFormData, confirmPassword: e.target.value })}
+                                required
+                            />
+                        </div>
+                        {loginMsg && (
+                            <p className={`text-sm font-medium rounded-md px-3 py-2 ${loginMsg.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                                {loginMsg.text}
+                            </p>
+                        )}
+                        <Button type="submit" className="w-full">
+                            Create Login
+                        </Button>
+                    </form>
+                </DialogContent>
+            </Dialog>
+
+            {/* Reset Password Dialog */}
+            <Dialog open={isResetPwOpen} onOpenChange={(open) => { setIsResetPwOpen(open); setLoginMsg(null); }}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Reset Password — {loginTeacher?.name}</DialogTitle>
+                    </DialogHeader>
+                    <p className="text-sm text-muted-foreground">
+                        Enter a new password for this faculty member. Their phone number ({loginTeacher?.phone || 'not set'}) will remain as the username.
+                    </p>
+                    <form onSubmit={handleResetPassword} className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="reset-new">New Password</Label>
+                            <Input
+                                id="reset-new"
+                                type="password"
+                                placeholder="Min. 6 characters"
+                                value={resetPassword.newPassword}
+                                onChange={(e) => setResetPassword({ ...resetPassword, newPassword: e.target.value })}
+                                required
+                                minLength={6}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="reset-confirm">Confirm New Password</Label>
+                            <Input
+                                id="reset-confirm"
+                                type="password"
+                                placeholder="Re-enter new password"
+                                value={resetPassword.confirmPassword}
+                                onChange={(e) => setResetPassword({ ...resetPassword, confirmPassword: e.target.value })}
+                                required
+                            />
+                        </div>
+                        {loginMsg && (
+                            <p className={`text-sm font-medium rounded-md px-3 py-2 ${loginMsg.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+                                {loginMsg.text}
+                            </p>
+                        )}
+                        <Button type="submit" className="w-full">
+                            Reset Password
+                        </Button>
+                    </form>
                 </DialogContent>
             </Dialog>
         </div>

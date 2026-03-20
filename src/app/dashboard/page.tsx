@@ -23,6 +23,7 @@ const roleLabels: Record<string, string> = {
     feedback_coordinator: 'Feedback Coordinator',
     principal: 'Director',
     hod: 'Head of Department',
+    faculty: 'Faculty',
 };
 
 export default async function DashboardPage() {
@@ -34,7 +35,7 @@ export default async function DashboardPage() {
 
     await connectDB();
 
-    const role = session.user.role;
+    const role = session.user.role as string;
 
     // Super Admin Dashboard
     if (role === 'super_admin') {
@@ -110,6 +111,25 @@ export default async function DashboardPage() {
                         </CardContent>
                     </Card>
                 </div>
+            </div>
+        );
+    }
+
+    // Faculty Dashboard
+    if (role === 'faculty') {
+        return (
+            <div>
+                <div className="mb-6">
+                    <h1 className="text-2xl font-bold">Welcome, {session.user.name}</h1>
+                    <Badge variant="outline">{roleLabels[role]}</Badge>
+                </div>
+                <Card>
+                    <CardContent className="py-8">
+                        <p className="text-center text-muted-foreground">
+                            You are logged in as faculty. Your portal access will be set up soon.
+                        </p>
+                    </CardContent>
+                </Card>
             </div>
         );
     }

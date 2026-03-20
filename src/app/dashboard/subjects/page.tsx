@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { useSession } from 'next-auth/react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -65,14 +66,18 @@ const defaultTypes: SubjectTypes = {
 };
 
 export default function SubjectsPage() {
+    const { data: session } = useSession();
+    const role = session?.user?.role || '';
+
     return (
         <Suspense fallback={<div>Loading...</div>}>
-            <SubjectsContent />
+            <SubjectsContent userRole={role} />
         </Suspense>
     );
 }
 
-function SubjectsContent() {
+function SubjectsContent({ userRole }: { userRole: string }) {
+    const isFaculty = userRole === 'faculty';
     const searchParams = useSearchParams();
     const canDelete = searchParams.get('delete') === 'true';
 
@@ -217,179 +222,182 @@ function SubjectsContent() {
         <>
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
                 <h1 className="text-2xl font-bold">Subjects</h1>
-                <Dialog open={isOpen} onOpenChange={setIsOpen}>
-                    <DialogTrigger asChild>
-                        <Button>Add Subject</Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-h-[90vh] overflow-y-auto">
-                        <DialogHeader>
-                            <DialogTitle>Add New Subject</DialogTitle>
-                        </DialogHeader>
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div className="space-y-2">
-                                    <Label htmlFor="name">Subject Name</Label>
-                                    <Input
-                                        id="name"
-                                        value={formData.name}
-                                        onChange={(e) =>
-                                            setFormData({ ...formData, name: e.target.value })
-                                        }
-                                        placeholder="e.g. Mathematics"
-                                        required
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <Label htmlFor="code">Subject Code (Optional)</Label>
-                                    <Input
-                                        id="code"
-                                        value={formData.code}
-                                        onChange={(e) =>
-                                            setFormData({ ...formData, code: e.target.value })
-                                        }
-                                        placeholder="e.g. MATH101"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="space-y-3">
-                                <Label>Subject Types</Label>
-                                <div className="border rounded-lg p-4 space-y-4">
-                                    {/* Theory */}
-                                    <div className="flex items-center gap-3">
-                                        <Checkbox
-                                            id="hasTheory"
-                                            checked={formData.types.hasTheory}
-                                            onCheckedChange={(checked: boolean) =>
-                                                updateTypes({ hasTheory: checked })
+                {!isFaculty && (
+                    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+                        <DialogTrigger asChild>
+                            <Button>Add Subject</Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-h-[90vh] overflow-y-auto">
+                            {/* ... dialog content ... */}
+                            <DialogHeader>
+                                <DialogTitle>Add New Subject</DialogTitle>
+                            </DialogHeader>
+                            <form onSubmit={handleSubmit} className="space-y-4">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <Label htmlFor="name">Subject Name</Label>
+                                        <Input
+                                            id="name"
+                                            value={formData.name}
+                                            onChange={(e) =>
+                                                setFormData({ ...formData, name: e.target.value })
                                             }
+                                            placeholder="e.g. Mathematics"
+                                            required
                                         />
-                                        <Label htmlFor="hasTheory" className="font-medium cursor-pointer">
-                                            TH - Theory
-                                        </Label>
                                     </div>
+                                    <div className="space-y-2">
+                                        <Label htmlFor="code">Subject Code (Optional)</Label>
+                                        <Input
+                                            id="code"
+                                            value={formData.code}
+                                            onChange={(e) =>
+                                                setFormData({ ...formData, code: e.target.value })
+                                            }
+                                            placeholder="e.g. MATH101"
+                                        />
+                                    </div>
+                                </div>
 
-                                    {/* Practical */}
-                                    <div className="space-y-3">
+                                <div className="space-y-3">
+                                    <Label>Subject Types</Label>
+                                    <div className="border rounded-lg p-4 space-y-4">
+                                        {/* Theory */}
                                         <div className="flex items-center gap-3">
                                             <Checkbox
-                                                id="hasPractical"
-                                                checked={formData.types.hasPractical}
+                                                id="hasTheory"
+                                                checked={formData.types.hasTheory}
                                                 onCheckedChange={(checked: boolean) =>
-                                                    updateTypes({
-                                                        hasPractical: checked,
-                                                        practicalType: checked
-                                                            ? formData.types.practicalType
-                                                            : { saPr: { enabled: false }, faPr: false },
-                                                    })
+                                                    updateTypes({ hasTheory: checked })
                                                 }
                                             />
-                                            <Label htmlFor="hasPractical" className="font-medium cursor-pointer">
-                                                PR - Practical
+                                            <Label htmlFor="hasTheory" className="font-medium cursor-pointer">
+                                                TH - Theory
                                             </Label>
                                         </div>
 
-                                        {/* Nested Practical Options */}
-                                        {formData.types.hasPractical && (
-                                            <div className="ml-6 pl-4 border-l-2 space-y-3">
-                                                {/* SA PR */}
-                                                <div className="space-y-2">
-                                                    <div className="flex items-center gap-3">
-                                                        <Checkbox
-                                                            id="saPr"
-                                                            checked={formData.types.practicalType?.saPr?.enabled || false}
-                                                            onCheckedChange={(checked: boolean) =>
-                                                                updateTypes({
-                                                                    practicalType: {
-                                                                        ...formData.types.practicalType,
-                                                                        saPr: {
-                                                                            enabled: checked,
-                                                                            type: checked
-                                                                                ? formData.types.practicalType?.saPr?.type
-                                                                                : undefined,
-                                                                        },
-                                                                    },
-                                                                })
-                                                            }
-                                                        />
-                                                        <Label htmlFor="saPr" className="cursor-pointer">
-                                                            SA PR - Skill Assessment Practical
-                                                        </Label>
-                                                    </div>
+                                        {/* Practical */}
+                                        <div className="space-y-3">
+                                            <div className="flex items-center gap-3">
+                                                <Checkbox
+                                                    id="hasPractical"
+                                                    checked={formData.types.hasPractical}
+                                                    onCheckedChange={(checked: boolean) =>
+                                                        updateTypes({
+                                                            hasPractical: checked,
+                                                            practicalType: checked
+                                                                ? formData.types.practicalType
+                                                                : { saPr: { enabled: false }, faPr: false },
+                                                        })
+                                                    }
+                                                />
+                                                <Label htmlFor="hasPractical" className="font-medium cursor-pointer">
+                                                    PR - Practical
+                                                </Label>
+                                            </div>
 
-                                                    {formData.types.practicalType?.saPr?.enabled && (
-                                                        <div className="ml-6">
-                                                            <Select
-                                                                value={formData.types.practicalType?.saPr?.type || 'none'}
-                                                                onValueChange={(value) =>
+                                            {/* Nested Practical Options */}
+                                            {formData.types.hasPractical && (
+                                                <div className="ml-6 pl-4 border-l-2 space-y-3">
+                                                    {/* SA PR */}
+                                                    <div className="space-y-2">
+                                                        <div className="flex items-center gap-3">
+                                                            <Checkbox
+                                                                id="saPr"
+                                                                checked={formData.types.practicalType?.saPr?.enabled || false}
+                                                                onCheckedChange={(checked: boolean) =>
                                                                     updateTypes({
                                                                         practicalType: {
                                                                             ...formData.types.practicalType,
                                                                             saPr: {
-                                                                                enabled: true,
-                                                                                type: value === 'none' ? undefined : (value as 'internal' | 'external'),
+                                                                                enabled: checked,
+                                                                                type: checked
+                                                                                    ? formData.types.practicalType?.saPr?.type
+                                                                                    : undefined,
                                                                             },
                                                                         },
                                                                     })
                                                                 }
-                                                            >
-                                                                <SelectTrigger className="w-40">
-                                                                    <SelectValue placeholder="Select type" />
-                                                                </SelectTrigger>
-                                                                <SelectContent>
-                                                                    <SelectItem value="none">Select type</SelectItem>
-                                                                    <SelectItem value="internal">Internal</SelectItem>
-                                                                    <SelectItem value="external">External</SelectItem>
-                                                                </SelectContent>
-                                                            </Select>
+                                                            />
+                                                            <Label htmlFor="saPr" className="cursor-pointer">
+                                                                SA PR - Skill Assessment Practical
+                                                            </Label>
                                                         </div>
-                                                    )}
-                                                </div>
 
-                                                {/* FA PR */}
-                                                <div className="flex items-center gap-3">
-                                                    <Checkbox
-                                                        id="faPr"
-                                                        checked={formData.types.practicalType?.faPr || false}
-                                                        onCheckedChange={(checked: boolean) =>
-                                                            updateTypes({
-                                                                practicalType: {
-                                                                    ...formData.types.practicalType,
-                                                                    faPr: checked,
-                                                                },
-                                                            })
-                                                        }
-                                                    />
-                                                    <Label htmlFor="faPr" className="cursor-pointer">
-                                                        FA PR - Final Assessment Practical
-                                                    </Label>
-                                                </div>
-                                            </div>
-                                        )}
-                                    </div>
+                                                        {formData.types.practicalType?.saPr?.enabled && (
+                                                            <div className="ml-6">
+                                                                <Select
+                                                                    value={formData.types.practicalType?.saPr?.type || 'none'}
+                                                                    onValueChange={(value) =>
+                                                                        updateTypes({
+                                                                            practicalType: {
+                                                                                ...formData.types.practicalType,
+                                                                                saPr: {
+                                                                                    enabled: true,
+                                                                                    type: value === 'none' ? undefined : (value as 'internal' | 'external'),
+                                                                                },
+                                                                            },
+                                                                        })
+                                                                    }
+                                                                >
+                                                                    <SelectTrigger className="w-40">
+                                                                        <SelectValue placeholder="Select type" />
+                                                                    </SelectTrigger>
+                                                                    <SelectContent>
+                                                                        <SelectItem value="none">Select type</SelectItem>
+                                                                        <SelectItem value="internal">Internal</SelectItem>
+                                                                        <SelectItem value="external">External</SelectItem>
+                                                                    </SelectContent>
+                                                                </Select>
+                                                            </div>
+                                                        )}
+                                                    </div>
 
-                                    {/* SLA */}
-                                    <div className="flex items-center gap-3">
-                                        <Checkbox
-                                            id="hasSLA"
-                                            checked={formData.types.hasSLA}
-                                            onCheckedChange={(checked: boolean) =>
-                                                updateTypes({ hasSLA: checked })
-                                            }
-                                        />
-                                        <Label htmlFor="hasSLA" className="font-medium cursor-pointer">
-                                            SLA - Self Learning Assessment
-                                        </Label>
+                                                    {/* FA PR */}
+                                                    <div className="flex items-center gap-3">
+                                                        <Checkbox
+                                                            id="faPr"
+                                                            checked={formData.types.practicalType?.faPr || false}
+                                                            onCheckedChange={(checked: boolean) =>
+                                                                updateTypes({
+                                                                    practicalType: {
+                                                                        ...formData.types.practicalType,
+                                                                        faPr: checked,
+                                                                    },
+                                                                })
+                                                            }
+                                                        />
+                                                        <Label htmlFor="faPr" className="cursor-pointer">
+                                                            FA PR - Final Assessment Practical
+                                                        </Label>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* SLA */}
+                                        <div className="flex items-center gap-3">
+                                            <Checkbox
+                                                id="hasSLA"
+                                                checked={formData.types.hasSLA}
+                                                onCheckedChange={(checked: boolean) =>
+                                                    updateTypes({ hasSLA: checked })
+                                                }
+                                            />
+                                            <Label htmlFor="hasSLA" className="font-medium cursor-pointer">
+                                                SLA - Self Learning Assessment
+                                            </Label>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            <Button type="submit" className="w-full">
-                                Create Subject
-                            </Button>
-                        </form>
-                    </DialogContent>
-                </Dialog>
+                                <Button type="submit" className="w-full">
+                                    Create Subject
+                                </Button>
+                            </form>
+                        </DialogContent>
+                    </Dialog>
+                )}
             </div>
 
             <div className="border rounded-lg overflow-x-auto">
@@ -400,10 +408,11 @@ function SubjectsContent() {
                             <TableHead>Code</TableHead>
                             <TableHead>Types</TableHead>
                             <TableHead>Status</TableHead>
-                            <TableHead>Active</TableHead>
-                            <TableHead>Actions</TableHead>
+                            {!isFaculty && <TableHead>Active</TableHead>}
+                            {!isFaculty && <TableHead>Actions</TableHead>}
                         </TableRow>
                     </TableHeader>
+
                     <TableBody>
                         {subjects.length === 0 ? (
                             <TableRow>
@@ -439,32 +448,36 @@ function SubjectsContent() {
                                             {subject.isActive ? 'Active' : 'Inactive'}
                                         </Badge>
                                     </TableCell>
-                                    <TableCell>
-                                        <Switch
-                                            checked={subject.isActive}
-                                            onCheckedChange={() => toggleStatus(subject._id, subject.isActive)}
-                                        />
-                                    </TableCell>
-                                    <TableCell>
-                                        <div className="flex items-center gap-2">
-                                            <Button
-                                                variant="outline"
-                                                size="sm"
-                                                onClick={() => openEditDialog(subject)}
-                                            >
-                                                Edit
-                                            </Button>
-                                            {canDelete && (
+                                    {!isFaculty && (
+                                        <TableCell>
+                                            <Switch
+                                                checked={subject.isActive}
+                                                onCheckedChange={() => toggleStatus(subject._id, subject.isActive)}
+                                            />
+                                        </TableCell>
+                                    )}
+                                    {!isFaculty && (
+                                        <TableCell>
+                                            <div className="flex items-center gap-2">
                                                 <Button
-                                                    variant="destructive"
+                                                    variant="outline"
                                                     size="sm"
-                                                    onClick={() => handleDelete(subject._id)}
+                                                    onClick={() => openEditDialog(subject)}
                                                 >
-                                                    Delete
+                                                    Edit
                                                 </Button>
-                                            )}
-                                        </div>
-                                    </TableCell>
+                                                {canDelete && (
+                                                    <Button
+                                                        variant="destructive"
+                                                        size="sm"
+                                                        onClick={() => handleDelete(subject._id)}
+                                                    >
+                                                        Delete
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        </TableCell>
+                                    )}
                                 </TableRow>
                             ))
                         )}

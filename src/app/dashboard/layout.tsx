@@ -20,7 +20,9 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { UnauthorizedAlert } from '@/components/UnauthorizedAlert';
+import { NotificationBell } from '@/components/NotificationBell';
 import logo from '@/assets/logo.png';
+import { Bell } from 'lucide-react';
 
 interface DashboardLayoutProps {
     children: ReactNode;
@@ -70,11 +72,28 @@ const navGroups: NavGroup[] = [
     },
     {
         label: 'Data',
-        roles: ['iamp_coordinator', 'feedback_coordinator'],
+        roles: ['iamp_coordinator', 'feedback_coordinator', 'faculty'],
         items: [
             { href: '/dashboard/classes', label: 'Classes', roles: ['iamp_coordinator', 'feedback_coordinator'] },
-            { href: '/dashboard/subjects', label: 'Subjects', roles: ['iamp_coordinator', 'feedback_coordinator'] },
+            { href: '/dashboard/subjects', label: 'Subjects', roles: ['iamp_coordinator', 'feedback_coordinator', 'faculty'] },
             { href: '/dashboard/teachers', label: 'Teachers', roles: ['iamp_coordinator', 'feedback_coordinator'] },
+        ],
+    },
+    {
+        label: 'Paper Submission',
+        roles: ['super_admin', 'faculty', 'hod'],
+        items: [
+            { href: '/dashboard/paper-sessions', label: 'Sessions', roles: ['super_admin'] },
+            { href: '/dashboard/paper-submissions', label: 'Submit Papers', roles: ['faculty'] },
+            { href: '/dashboard/paper-review', label: 'Review Papers', roles: ['hod'] },
+            { href: '/dashboard/paper-report', label: 'Submission Report', roles: ['hod'] },
+        ],
+    },
+    {
+        label: 'Account',
+        roles: ['super_admin', 'iamp_coordinator', 'feedback_coordinator', 'principal', 'hod', 'faculty'],
+        items: [
+            { href: '/dashboard/notifications', label: 'Notifications', roles: ['super_admin', 'iamp_coordinator', 'feedback_coordinator', 'principal', 'hod', 'faculty'] },
         ],
     },
 ];
@@ -184,10 +203,18 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                                     </div>
                                 ))}
 
-                                <div className="mt-auto pt-4 border-t">
-                                    <p className="text-sm text-muted-foreground mb-2 px-3">
-                                        {session?.user?.name}
-                                    </p>
+                                <div className="mt-auto pt-4 border-t flex flex-col gap-3">
+                                    <div className="flex items-center justify-between px-3">
+                                        <div className="flex flex-col">
+                                            <p className="text-sm font-medium text-foreground">
+                                                {session?.user?.name}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground uppercase">
+                                                {role.replace('_', ' ')}
+                                            </p>
+                                        </div>
+                                        <NotificationBell />
+                                    </div>
                                     <Button
                                         variant="outline"
                                         size="sm"
@@ -270,7 +297,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
                     {/* Desktop User Info */}
                     <div className="hidden md:flex items-center gap-4">
-                        <span className="text-sm text-muted-foreground">
+                        <NotificationBell />
+                        <span className="text-sm font-medium text-foreground">
                             {session?.user?.name}
                         </span>
                         <Button
