@@ -45,14 +45,14 @@ export async function GET(request: NextRequest) {
 
         // 4. Map subjects to their submission status
         const report = subjects.map(subject => {
-            const submission = submissions.find((s: any) => s.subject.toString() === subject._id.toString());
+            const submission = submissions.find((s: any) => s.subject.toString() === subject._id.toString()) as any;
             return {
                 subjectId: subject._id,
                 subjectName: subject.name,
                 subjectCode: subject.code,
                 status: submission ? submission.status : 'not_submitted',
                 facultyName: submission?.faculty?.name || '-',
-                submittedAt: submission ? (submission as any).createdAt : null, // Mongoose includes createdAt by default if timestamps: true
+                submittedAt: submission ? submission.createdAt : null, // Mongoose includes createdAt by default if timestamps: true
                 reviewedAt: submission?.reviewedAt || null
             };
         });
