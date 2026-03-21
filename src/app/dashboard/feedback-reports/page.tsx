@@ -23,6 +23,30 @@ const reportTypes: ReportType[] = [
         href: '/dashboard/feedback-reports/appreciation',
         icon: '📜',
     },
+    {
+        title: 'Graphical Report',
+        description: 'View department-wise analytical bar charts and comprehensive college-wide averages.',
+        href: '/dashboard/feedback-reports/graphical',
+        icon: '📈',
+    },
+    {
+        title: 'Faculty Rank Report',
+        description: 'View faculty rankings per department based on overall feedback scores.',
+        href: '/dashboard/feedback-reports/faculty-rank',
+        icon: '🏆',
+    },
+    {
+        title: 'Global Faculty Rank',
+        description: 'A comprehensive, single-bar analytical chart ranking every teacher in the institute globally.',
+        href: '/dashboard/feedback-reports/institute-faculty-rank',
+        icon: '🌍',
+    },
+    {
+        title: 'Remarks Graphical Report',
+        description: 'Categorized pie charts visualizing the ratio of Excellent, Good, Average, and Poor teaching ranks per department.',
+        href: '/dashboard/feedback-reports/remarks',
+        icon: '🥧',
+    },
 ];
 
 export default function FeedbackReportsPage() {
