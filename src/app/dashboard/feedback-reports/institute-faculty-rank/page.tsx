@@ -107,8 +107,8 @@ export default function InstituteFacultyRankReportPage() {
                         RANK OF FACULTY IN INSTITUTE
                     </h2>
 
-                    {/* The analytical Horizontal Bar Chart styled like Google Charts */}
-                    <div className="flex-1 w-full flex justify-center mt-2 pb-12">
+                    {/* The modern analytical Horizontal Bar Chart */}
+                    <div className="flex-1 w-full flex justify-center mt-6 p-4 md:p-8 bg-white border border-indigo-50 shadow-2xl rounded-[2rem] print:border-none print:shadow-none print:p-0 print:rounded-none">
                         <div className="w-full max-w-[1200px]" style={{ height: `${dynamicHeight}px` }}>
                             <ResponsiveContainer width="100%" height="100%">
                                 <BarChart 
@@ -138,13 +138,23 @@ export default function InstituteFacultyRankReportPage() {
 
                                     <RechartsTooltip cursor={{fill: 'rgba(0,0,0,0.05)'}} contentStyle={{color: 'black'}} />
                                     
-                                    {/* Traditional Google Charts Blue */}
-                                    <Bar dataKey="average" fill="#3366cc" barSize={18} radius={[0, 4, 4, 0]}>
+                                    {/* Traditional Google Charts Blue turned into Modern Gradient */}
+                                    <Bar dataKey="average" fill="url(#colorUvVert)" barSize={22} radius={[0, 8, 8, 0]}>
                                         {/* Right-aligned text formatting (R1 | 9.80) */}
-                                        <LabelList dataKey="annotation" position="right" style={{ fontSize: '12px', fill: '#111827', fontWeight: 'bold' }} />
+                                        <LabelList dataKey="annotation" position="right" style={{ fontSize: '12.5px', fill: '#4b5563', fontWeight: 'bold' }} />
                                     </Bar>
                                 </BarChart>
                             </ResponsiveContainer>
+                            
+                            {/* SVG Gradient for modern horizontal glowing effect */}
+                            <svg width="0" height="0">
+                                <defs>
+                                <linearGradient id="colorUvVert" x1="0" y1="0" x2="1" y2="0">
+                                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.9}/>
+                                    <stop offset="95%" stopColor="#2563eb" stopOpacity={1}/>
+                                </linearGradient>
+                                </defs>
+                            </svg>
                         </div>
                     </div>
                 </div>

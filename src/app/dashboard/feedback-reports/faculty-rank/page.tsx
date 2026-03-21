@@ -117,7 +117,7 @@ export default function FacultyRankReportPage() {
                         </h1>
 
                         {/* The analytical Bar Chart */}
-                        <div className="flex-1 w-full flex justify-center mt-4">
+                        <div className="flex-1 w-full flex justify-center mt-6 border border-gray-100 shadow-lg rounded-3xl p-6 bg-white print:border-transparent print:shadow-none print:p-0 print:border-none print:rounded-none">
                             <div className="w-full max-w-[1000px] h-[450px]">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <BarChart 
@@ -143,12 +143,22 @@ export default function FacultyRankReportPage() {
                                         />
                                         <RechartsTooltip cursor={{fill: 'transparent'}} contentStyle={{color: 'black'}} />
                                         
-                                        {/* Green Bars as prescribed by PHP Script backgroundColor: "rgba(37,160,50,0.7)" */}
-                                        <Bar dataKey="average" fill="rgba(37,160,50,0.8)" stroke="rgba(37,160,50,1.0)" strokeWidth={1} barSize={60}>
-                                            <LabelList dataKey="average" position="top" style={{ fontSize: '14px', fill: 'black', fontWeight: 'bold' }} />
+                                        {/* Dynamic Bar with shadow styling */}
+                                        <Bar dataKey="average" fill="url(#colorUv)" radius={[10, 10, 0, 0]} barSize={60}>
+                                            <LabelList dataKey="average" position="top" style={{ fontSize: '13px', fill: '#4b5563', fontWeight: 'bold' }} />
                                         </Bar>
                                     </BarChart>
                                 </ResponsiveContainer>
+                                
+                                {/* SVG Gradients for glowing effect on screen */}
+                                <svg width="0" height="0">
+                                  <defs>
+                                    <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
+                                      <stop offset="5%" stopColor="#10b981" stopOpacity={0.9}/>
+                                      <stop offset="95%" stopColor="#059669" stopOpacity={1}/>
+                                    </linearGradient>
+                                  </defs>
+                                </svg>
                             </div>
                         </div>
                     </div>

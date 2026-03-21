@@ -135,18 +135,18 @@ export default function RemarksReportPage() {
                     </div>
 
                     {/* Titles exactly like PHP script */}
-                    <h2 className="text-center text-xl md:text-2xl font-bold mb-10 text-gray-800 tracking-wider">
+                    <h2 className="text-center text-xl md:text-2xl font-extrabold mb-10 text-gray-800 tracking-wider">
                         FACULTY FEEDBACK REMARKS ANALYSIS
                     </h2>
 
                     {/* Full width CSS layout to accommodate long labels */}
-                    <div className="flex flex-col gap-12 px-4 md:px-8 print:px-0">
+                    <div className="flex flex-col gap-10 px-4 md:px-8 print:px-0 mb-12">
                         {departments.map((dept) => {
                             const pieData = computePieData(dept.faculties);
                             
                             return (
-                                <div key={dept.departmentId} className="flex flex-col items-center justify-start border border-gray-200 shadow-sm p-4 print:shadow-none print:border-gray-400 avoid-break rounded-md">
-                                    <h2 className="w-full text-center text-xl font-bold mb-4">{dept.departmentName}</h2>
+                                <div key={dept.departmentId} className="flex flex-col items-center justify-start border border-gray-100 shadow-lg p-6 bg-white print:border-gray-300 print:shadow-none avoid-break rounded-[2rem] print:rounded-none">
+                                    <h2 className="w-full text-center text-2xl font-extrabold text-gray-800 tracking-wide mb-6">{dept.departmentName}</h2>
                                     
                                     {pieData.length > 0 ? (
                                         <div className="w-full h-[450px]">
@@ -160,11 +160,13 @@ export default function RemarksReportPage() {
                                                         dataKey="value"
                                                         label={({ name, percent = 0 }: any) => `${name} (${(percent * 100).toFixed(0)}%)`}
                                                         labelLine={true}
+                                                        stroke="none"
                                                     >
                                                         {pieData.map((entry, index) => (
                                                             <Cell 
                                                                 key={`cell-${index}`} 
                                                                 fill={CATEGORY_COLORS[entry.category as keyof typeof CATEGORY_COLORS]} 
+                                                                className="hover:opacity-80 transition-opacity outline-none"
                                                             />
                                                         ))}
                                                     </Pie>

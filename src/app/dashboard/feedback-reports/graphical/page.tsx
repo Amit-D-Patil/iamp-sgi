@@ -144,74 +144,72 @@ export default function GraphicalReportPage() {
             </div>
 
             {/* Print View Container */}
-            <div className="print-container bg-white" style={{ maxWidth: '1260px', margin: '0 auto', color: '#000' }}>
-                
+            <div className="print-container w-full" style={{ maxWidth: '1260px', margin: '0 auto', color: '#000' }}>
+
                 {/* Header Strip */}
                 <div className="flex border-b border-black pb-2 mb-4 items-center gap-6">
                     <div className="w-[100px] shrink-0 print:w-[100px]">
-                         <Image src={letterhead} alt="Logo" width={100} height={100} style={{ objectFit: 'contain', width: '100%', height: 'auto' }} priority />
                     </div>
                     <div className="flex-1 text-center font-serif">
-                        <h2 className="text-xl md:text-3xl font-bold">Sou. Sushila Danchand Ghodawat Charitable Trust&apos;s</h2>
-                        <h1 className="text-2xl md:text-4xl font-extrabold mt-1">Sanjay Ghodawat Polytechnic</h1>
+                        <Image src={letterhead} alt="Logo" height={100} style={{ objectFit: 'contain', width: '100%', height: 'auto' }} priority />
                         <h3 className="text-lg md:text-2xl font-bold mt-2">Formative Feedback {getMonthYear()}</h3>
                     </div>
                     <div className="w-[100px] shrink-0" />
                 </div>
 
-                {/* Dense Summary Table matching PHP style exactly */}
-                <div className="w-full border border-black mb-8 overflow-x-auto text-xs md:text-sm font-bold">
-                    <div className="flex border-b border-black text-center bg-gray-100/50 print:bg-transparent">
-                        <div className="flex-1 min-w-[80px] p-2 border-r border-black flex items-center justify-center">DEPT</div>
+                {/* Dense Summary Table */}
+                <div className="w-full bg-white rounded-xl shadow-sm border border-gray-200 mb-8 overflow-hidden text-xs md:text-sm font-medium print:shadow-none print:border-black print:rounded-none">
+                    <div className="flex border-b border-gray-200 text-center bg-gray-50 text-gray-700 print:bg-transparent print:border-black">
+                        <div className="flex-1 min-w-[80px] p-2 border-r border-gray-200 flex items-center justify-center font-bold print:border-black">DEPT</div>
                         {data.questions.map((q, i) => (
-                            <div key={q._id} className="w-[60px] md:w-[70px] shrink-0 p-2 border-r border-black flex items-center justify-center">Q{i + 1}</div>
+                            <div key={q._id} className="w-[60px] md:w-[70px] shrink-0 p-2 border-r border-gray-200 flex items-center justify-center font-bold print:border-black">Q{i + 1}</div>
                         ))}
-                        <div className="w-[60px] md:w-[70px] shrink-0 p-2 border-r border-black flex items-center justify-center">AVG</div>
-                        <div className="w-[70px] md:w-[80px] shrink-0 p-2 border-r border-black flex items-center justify-center">AVG(%)</div>
-                        <div className="w-[60px] md:w-[70px] shrink-0 p-2 flex items-center justify-center">RANK</div>
+                        <div className="w-[60px] md:w-[70px] shrink-0 p-2 border-r border-gray-200 flex items-center justify-center font-bold print:border-black">AVG</div>
+                        <div className="w-[70px] md:w-[80px] shrink-0 p-2 border-r border-gray-200 flex items-center justify-center font-bold print:border-black">AVG(%)</div>
+                        <div className="w-[60px] md:w-[70px] shrink-0 p-2 flex items-center justify-center font-bold">RANK</div>
                     </div>
 
                     {/* Department Rows */}
                     {data.departments.map(dept => (
-                        <div key={dept.departmentId} className="flex border-b border-black text-center font-normal last:border-0 hover:bg-gray-50/50 print:hover:bg-transparent">
-                            <div className="flex-1 min-w-[80px] p-2 border-r border-black flex items-center justify-center font-bold">
+                        <div key={dept.departmentId} className="flex border-b border-gray-200 text-center font-normal last:border-0 hover:bg-gray-50/80 transition-colors print:hover:bg-transparent print:border-black">
+                            <div className="flex-1 min-w-[80px] p-2 border-r border-gray-200 flex items-center justify-center font-bold text-gray-800 print:border-black">
                                 {dept.departmentShortName || dept.departmentName}
                             </div>
                             {data.questions.map(q => {
                                 const qAvg = dept.questionAverages.find(a => a.questionId === q._id);
                                 return (
-                                    <div key={q._id} className="w-[60px] md:w-[70px] shrink-0 p-2 border-r border-black flex items-center justify-center">
+                                    <div key={q._id} className="w-[60px] md:w-[70px] shrink-0 p-2 border-r border-gray-200 flex items-center justify-center text-gray-600 print:text-black print:border-black">
                                         {qAvg ? qAvg.average.toFixed(2) : '0.00'}
                                     </div>
                                 );
                             })}
-                            <div className="w-[60px] md:w-[70px] shrink-0 p-2 border-r border-black flex items-center justify-center font-bold">
+                            <div className="w-[60px] md:w-[70px] shrink-0 p-2 border-r border-gray-200 flex items-center justify-center font-bold text-gray-800 print:border-black">
                                 {dept.overallAverage.toFixed(2)}
                             </div>
-                            <div className="w-[70px] md:w-[80px] shrink-0 p-2 border-r border-black flex items-center justify-center text-blue-700 font-bold print:text-black">
+                            <div className="w-[70px] md:w-[80px] shrink-0 p-2 border-r border-gray-200 flex items-center justify-center text-primary font-bold print:text-black print:border-black">
                                 {dept.percentage.toFixed(2)}
                             </div>
-                            <div className="w-[60px] md:w-[70px] shrink-0 p-2 flex items-center justify-center font-bold">
+                            <div className="w-[60px] md:w-[70px] shrink-0 p-2 flex items-center justify-center font-bold text-gray-700">
                                 {dept.rank || '-'}
                             </div>
                         </div>
                     ))}
 
                     {/* Overall Institute Row */}
-                    <div className="flex border-t-2 border-black text-center bg-gray-50 font-bold print:bg-transparent">
-                        <div className="flex-1 min-w-[80px] p-2 border-r border-black flex items-center justify-center">AVG</div>
+                    <div className="flex border-t-2 border-gray-300 text-center bg-gray-100 font-bold print:bg-transparent print:border-black">
+                        <div className="flex-1 min-w-[80px] p-2 border-r border-gray-300 flex items-center justify-center text-gray-800 print:border-black">AVG</div>
                         {data.questions.map(q => {
                             const qAvg = data.institute.questionAverages.find(a => a.questionId === q._id);
                             return (
-                                <div key={q._id} className="w-[60px] md:w-[70px] shrink-0 p-2 border-r border-black flex items-center justify-center">
+                                <div key={q._id} className="w-[60px] md:w-[70px] shrink-0 p-2 border-r border-gray-300 flex items-center justify-center text-gray-700 print:text-black print:border-black">
                                     {qAvg ? qAvg.average.toFixed(2) : '0.00'}
                                 </div>
                             );
                         })}
-                        <div className="w-[60px] md:w-[70px] shrink-0 p-2 border-r border-black flex items-center justify-center">
+                        <div className="w-[60px] md:w-[70px] shrink-0 p-2 border-r border-gray-300 flex items-center justify-center text-gray-800 print:border-black">
                             {data.institute.overallAverage.toFixed(2)}
                         </div>
-                        <div className="w-[70px] md:w-[80px] shrink-0 p-2 border-r border-black flex items-center justify-center text-blue-700 print:text-black">
+                        <div className="w-[70px] md:w-[80px] shrink-0 p-2 border-r border-gray-300 flex items-center justify-center text-primary print:text-black print:border-black">
                             {data.institute.percentage.toFixed(2)}
                         </div>
                         <div className="w-[60px] md:w-[70px] shrink-0 p-2 flex items-center justify-center">-</div>
@@ -219,7 +217,7 @@ export default function GraphicalReportPage() {
                 </div>
 
                 {/* Departmental Per-Question Bar Charts - Grid layout */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12 page-break-container">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12 page-break-container print:flex print:flex-col print:gap-10">
                     {data.departments.map((dept, i) => {
                         const deptColor = COLORS[i % COLORS.length];
                         const chartData = data.questions.map((q, idx) => {
@@ -228,17 +226,17 @@ export default function GraphicalReportPage() {
                         });
 
                         return (
-                            <div key={dept.departmentId} className="border border-black/30 p-2 pt-4 bg-white avoid-break">
-                                <h4 className="text-center font-bold text-lg mb-2">{dept.departmentShortName || dept.departmentName}</h4>
-                                <div className="h-[250px] w-full">
+                            <div key={dept.departmentId} className="border border-gray-100 shadow-md rounded-2xl p-4 bg-white avoid-break print:shadow-none print:border-gray-400 print:rounded-none print:w-full">
+                                <h4 className="text-center font-extrabold text-lg mb-4 text-gray-800 tracking-wide">{dept.departmentShortName || dept.departmentName}</h4>
+                                <div className="h-[250px] w-full print:h-[350px]">
                                     <ResponsiveContainer width="100%" height="100%">
                                         <BarChart data={chartData} margin={{ top: 15, right: 5, left: -20, bottom: 5 }}>
                                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ccc" />
                                             <XAxis dataKey="name" axisLine={true} tickLine={false} tick={{ fontSize: 10, fill: 'black' }} />
                                             <YAxis domain={[0, 10]} ticks={[0, 2, 4, 6, 8, 10]} axisLine={true} tickLine={false} tick={{ fontSize: 10, fill: 'black' }} />
-                                            <RechartsTooltip cursor={{fill: 'transparent'}} contentStyle={{color: 'black'}} />
-                                            <Bar dataKey="avg" fill={deptColor} barSize={25}>
-                                                <LabelList dataKey="avg" position="top" style={{ fontSize: '10px', fill: 'black', fontWeight: 'bold' }} />
+                                            <RechartsTooltip cursor={{ fill: 'transparent' }} contentStyle={{ color: 'black' }} />
+                                            <Bar dataKey="avg" fill={deptColor} maxBarSize={60} radius={[4, 4, 0, 0]}>
+                                                <LabelList dataKey="avg" position="top" style={{ fontSize: '11px', fill: '#4b5563', fontWeight: 'bold' }} />
                                             </Bar>
                                         </BarChart>
                                     </ResponsiveContainer>
@@ -254,7 +252,7 @@ export default function GraphicalReportPage() {
                 {/* Top Header repeatedly for second printed page */}
                 <div className="print-only-heading hidden print:flex border-b border-black pb-2 mb-4 items-center gap-6">
                     <div className="w-[100px] shrink-0">
-                         <Image src={letterhead} alt="Logo" width={100} height={100} style={{ objectFit: 'contain', width: '100%', height: 'auto' }} priority />
+                        <Image src={letterhead} alt="Logo" width={100} height={100} style={{ objectFit: 'contain', width: '100%', height: 'auto' }} priority />
                     </div>
                     <div className="flex-1 text-center font-serif">
                         <h2 className="text-xl md:text-3xl font-bold">Sou. Sushila Danchand Ghodawat Charitable Trust&apos;s</h2>
@@ -265,17 +263,17 @@ export default function GraphicalReportPage() {
                 </div>
 
                 {/* SGP Overall Avg vs Departments */}
-                <div className="border border-black/30 p-4 mb-8 bg-white avoid-break">
-                    <h3 className="text-center text-xl font-bold mb-4">SGP VS Departments</h3>
+                <div className="border border-gray-100 shadow-md rounded-2xl p-6 mb-8 bg-white avoid-break print:shadow-none print:border-gray-400 print:rounded-none">
+                    <h3 className="text-center text-2xl font-extrabold mb-6 text-gray-800 tracking-wider">SGP VS Departments</h3>
                     <div className="h-[400px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={instVsDeptData} margin={{ top: 20, right: 20, left: 0, bottom: 10 }}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ccc" />
                                 <XAxis dataKey="name" axisLine={true} tickLine={false} tick={{ fontSize: 14, fill: 'black', fontWeight: 'bold' }} />
                                 <YAxis domain={[0, 100]} ticks={[0, 20, 40, 60, 80, 100]} axisLine={true} tickLine={false} tick={{ fontSize: 12, fill: 'black' }} />
-                                <RechartsTooltip cursor={{fill: 'transparent'}} contentStyle={{color: 'black'}} />
-                                <Bar dataKey="avg" fill="#25A032" barSize={50}>
-                                    <LabelList dataKey="avg" position="top" style={{ fontSize: '14px', fill: 'black', fontWeight: 'bold' }} />
+                                <RechartsTooltip cursor={{ fill: 'transparent' }} contentStyle={{ color: 'black' }} />
+                                <Bar dataKey="avg" fill="#25A032" barSize={50} radius={[8, 8, 0, 0]}>
+                                    <LabelList dataKey="avg" position="top" style={{ fontSize: '14px', fill: '#4b5563', fontWeight: 'bold' }} />
                                 </Bar>
                             </BarChart>
                         </ResponsiveContainer>
@@ -283,17 +281,17 @@ export default function GraphicalReportPage() {
                 </div>
 
                 {/* SGP Overall Avg vs Questions */}
-                <div className="border border-black/30 p-4 mb-8 bg-white avoid-break">
-                    <h3 className="text-center text-xl font-bold mb-4">SGP VS Questions</h3>
+                <div className="border border-gray-100 shadow-md rounded-2xl p-6 mb-8 bg-white avoid-break print:shadow-none print:border-gray-400 print:rounded-none">
+                    <h3 className="text-center text-2xl font-extrabold mb-6 text-gray-800 tracking-wider">SGP VS Questions</h3>
                     <div className="h-[400px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={instVsQuestionData} margin={{ top: 20, right: 20, left: -10, bottom: 20 }}>
                                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ccc" />
                                 <XAxis dataKey="name" axisLine={true} tickLine={false} tick={{ fontSize: 14, fill: 'black', fontWeight: 'bold' }} />
                                 <YAxis domain={[0, 10]} ticks={[0, 2, 4, 6, 8, 10]} axisLine={true} tickLine={false} tick={{ fontSize: 12, fill: 'black' }} />
-                                <RechartsTooltip cursor={{fill: 'transparent'}} contentStyle={{color: 'black'}} />
-                                <Bar dataKey="avg" fill="#3b8bba" barSize={40}>
-                                    <LabelList dataKey="avg" position="top" style={{ fontSize: '14px', fill: 'black', fontWeight: 'bold' }} />
+                                <RechartsTooltip cursor={{ fill: 'transparent' }} contentStyle={{ color: 'black' }} />
+                                <Bar dataKey="avg" fill="#3b8bba" barSize={40} radius={[6, 6, 0, 0]}>
+                                    <LabelList dataKey="avg" position="top" style={{ fontSize: '14px', fill: '#4b5563', fontWeight: 'bold' }} />
                                 </Bar>
                             </BarChart>
                         </ResponsiveContainer>
