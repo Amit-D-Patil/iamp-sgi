@@ -123,7 +123,7 @@ function TeachersContent({ userRole }: { userRole: string }) {
     });
 
     // Create / Reset login dialogs
-    const isIampCoordinator = userRole === 'iamp_coordinator';
+    const canManageLogins = ['iamp_coordinator', 'hod'].includes(userRole);
     const [isCreateLoginOpen, setIsCreateLoginOpen] = useState(false);
     const [isResetPwOpen, setIsResetPwOpen] = useState(false);
     const [loginTeacher, setLoginTeacher] = useState<Teacher | null>(null);
@@ -610,7 +610,7 @@ function TeachersContent({ userRole }: { userRole: string }) {
                                             >
                                                 Mappings
                                             </Button>
-                                            {isIampCoordinator && (
+                                            {canManageLogins && (
                                                 <>
                                                     {!teacher.hasLogin ? (
                                                         <Button

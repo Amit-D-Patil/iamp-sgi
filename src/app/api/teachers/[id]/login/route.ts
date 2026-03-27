@@ -10,7 +10,7 @@ type Params = { params: Promise<{ id: string }> };
 export async function POST(request: NextRequest, { params }: Params) {
     try {
         const session = await auth();
-        if (!session || session.user.role !== 'iamp_coordinator') {
+        if (!session || !['iamp_coordinator', 'hod'].includes(session.user.role)) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
 
@@ -77,7 +77,7 @@ export async function POST(request: NextRequest, { params }: Params) {
 export async function PATCH(request: NextRequest, { params }: Params) {
     try {
         const session = await auth();
-        if (!session || session.user.role !== 'iamp_coordinator') {
+        if (!session || !['iamp_coordinator', 'hod'].includes(session.user.role)) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
 
@@ -134,7 +134,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 export async function GET(request: NextRequest, { params }: Params) {
     try {
         const session = await auth();
-        if (!session || session.user.role !== 'iamp_coordinator') {
+        if (!session || !['iamp_coordinator', 'hod'].includes(session.user.role)) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
         }
 

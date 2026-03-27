@@ -29,7 +29,7 @@ const routePermissions: Record<string, string[]> = {
     // Data management
     '/dashboard/classes': ['iamp_coordinator', 'feedback_coordinator'],
     '/dashboard/subjects': ['iamp_coordinator', 'feedback_coordinator', 'faculty'],
-    '/dashboard/teachers': ['iamp_coordinator', 'feedback_coordinator'],
+    '/dashboard/teachers': ['iamp_coordinator', 'feedback_coordinator', 'hod'],
 
     // Dashboard - all authenticated users
     '/dashboard': ['super_admin', 'iamp_coordinator', 'feedback_coordinator', 'principal', 'hod', 'faculty', 'exam_coordinator'],

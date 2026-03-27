@@ -72,11 +72,11 @@ const navGroups: NavGroup[] = [
     },
     {
         label: 'Data',
-        roles: ['iamp_coordinator', 'feedback_coordinator', 'faculty'],
+        roles: ['iamp_coordinator', 'feedback_coordinator', 'faculty', 'hod'],
         items: [
             { href: '/dashboard/classes', label: 'Classes', roles: ['iamp_coordinator', 'feedback_coordinator'] },
             { href: '/dashboard/subjects', label: 'Subjects', roles: ['iamp_coordinator', 'feedback_coordinator', 'faculty'] },
-            { href: '/dashboard/teachers', label: 'Teachers', roles: ['iamp_coordinator', 'feedback_coordinator'] },
+            { href: '/dashboard/teachers', label: 'Teachers', roles: ['iamp_coordinator', 'feedback_coordinator', 'hod'] },
         ],
     },
     {
