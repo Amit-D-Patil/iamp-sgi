@@ -92,9 +92,10 @@ const navGroups: NavGroup[] = [
     },
     {
         label: 'Account',
-        roles: ['super_admin', 'iamp_coordinator', 'feedback_coordinator', 'principal', 'hod', 'faculty'],
+        roles: ['super_admin', 'iamp_coordinator', 'feedback_coordinator', 'principal', 'hod', 'faculty', 'exam_coordinator'],
         items: [
-            { href: '/dashboard/notifications', label: 'Notifications', roles: ['super_admin', 'iamp_coordinator', 'feedback_coordinator', 'principal', 'hod', 'faculty'] },
+            { href: '/dashboard/notifications', label: 'Notifications', roles: ['super_admin', 'iamp_coordinator', 'feedback_coordinator', 'principal', 'hod', 'faculty', 'exam_coordinator'] },
+            { href: '/dashboard/account/reset-password', label: 'Reset Password', roles: ['super_admin', 'iamp_coordinator', 'feedback_coordinator', 'principal', 'hod', 'faculty', 'exam_coordinator'] },
         ],
     },
 ];
@@ -150,7 +151,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                                 <span className="sr-only">Open menu</span>
                             </Button>
                         </SheetTrigger>
-                        <SheetContent side="left" className="w-72" aria-describedby={undefined}>
+                        <SheetContent side="left" className="w-72 flex flex-col" aria-describedby={undefined}>
                             <SheetHeader>
                                 <SheetTitle>
                                     <Link
@@ -169,7 +170,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                                     </Link>
                                 </SheetTitle>
                             </SheetHeader>
-                            <div className="flex flex-col gap-4 mt-4 px-2">
+                            <div className="flex flex-col flex-1 overflow-y-auto mt-4 px-2 gap-4 h-full">
                                 {/* Dashboard link */}
                                 <Link
                                     href="/dashboard"

@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
+import { Edit2, Trash2, X } from 'lucide-react';
 
 interface Department {
     _id: string;
@@ -52,6 +53,7 @@ const roleLabels: Record<string, string> = {
     principal: 'Director',
     hod: 'HOD',
     exam_coordinator: 'Exam Coordinator',
+    faculty: 'Faculty',
 };
 
 const roleColors: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
@@ -61,6 +63,7 @@ const roleColors: Record<string, 'default' | 'secondary' | 'destructive' | 'outl
     principal: 'secondary',
     hod: 'outline',
     exam_coordinator: 'default',
+    faculty: 'secondary',
 };
 
 export default function UsersPage() {
@@ -68,6 +71,7 @@ export default function UsersPage() {
     const [departments, setDepartments] = useState<Department[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isOpen, setIsOpen] = useState(false);
+    const [isEditOpen, setIsEditOpen] = useState(false);
     const [filterRole, setFilterRole] = useState<string>('all');
     const [formData, setFormData] = useState({
         name: '',
@@ -76,6 +80,13 @@ export default function UsersPage() {
         role: 'iamp_coordinator',
         department: '',
     });
+    const [editData, setEditData] = useState<{
+        id: string;
+        name: string;
+        phone: string;
+        role: string;
+        department: string;
+    } | null>(null);
 
     useEffect(() => {
         fetchData();
@@ -122,6 +133,46 @@ export default function UsersPage() {
         }
     };
 
+    const handleEditSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editData) return;
+
+        try {
+            const res = await fetch(`/api/users/${editData.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    name: editData.name,
+                    phone: editData.phone,
+                    role: editData.role,
+                    department: editData.department || undefined,
+                }),
+            });
+            if (res.ok) {
+                setIsEditOpen(false);
+                setEditData(null);
+                fetchData();
+            }
+        } catch (error) {
+            console.error('Error updating user:', error);
+        }
+    };
+
+    const handleDelete = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this user?')) return;
+
+        try {
+            const res = await fetch(`/api/users/${id}`, {
+                method: 'DELETE',
+            });
+            if (res.ok) {
+                fetchData();
+            }
+        } catch (error) {
+            console.error('Error deleting user:', error);
+        }
+    };
+
     const toggleStatus = async (id: string, currentStatus: boolean) => {
         try {
             await fetch(`/api/users/${id}`, {
@@ -135,48 +186,61 @@ export default function UsersPage() {
         }
     };
 
+    const openEdit = (user: User) => {
+        setEditData({
+            id: user._id,
+            name: user.name,
+            phone: user.phone,
+            role: user.role,
+            department: user.department?._id || '',
+        });
+        setIsEditOpen(true);
+    };
+
     const filteredUsers = filterRole === 'all'
         ? users.filter((u) => u.role !== 'super_admin')
         : users.filter((u) => u.role === filterRole);
 
-    const needsDepartment = ['iamp_coordinator', 'feedback_coordinator', 'hod'].includes(formData.role);
+    const needsDepartment = (role: string) => ['iamp_coordinator', 'feedback_coordinator', 'hod'].includes(role);
 
     if (isLoading) {
-        return <div>Loading...</div>;
+        return <div className="p-8 text-center text-muted-foreground">Loading users...</div>;
     }
 
     return (
-        <div>
-            <div className="flex items-center justify-between mb-6">
+        <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <h1 className="text-2xl font-bold">Users</h1>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3 w-full sm:w-auto">
                     <Select value={filterRole} onValueChange={setFilterRole}>
-                        <SelectTrigger className="w-40">
-                            <SelectValue placeholder="Filter by role" />
+                        <SelectTrigger className="w-full sm:w-48 bg-white">
+                            <SelectValue placeholder="Filter by Role" />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">All Users</SelectItem>
                             <SelectItem value="iamp_coordinator">IAMC Coordinators</SelectItem>
                             <SelectItem value="feedback_coordinator">Feedback Coordinators</SelectItem>
-                            <SelectItem value="principal">Principals</SelectItem>
+                            <SelectItem value="principal">Directors</SelectItem>
                             <SelectItem value="hod">HODs</SelectItem>
                             <SelectItem value="exam_coordinator">Exam Coordinators</SelectItem>
+                            <SelectItem value="faculty">Faculty</SelectItem>
                         </SelectContent>
                     </Select>
+                    
                     <Dialog open={isOpen} onOpenChange={setIsOpen}>
                         <DialogTrigger asChild>
-                            <Button>Add User</Button>
+                            <Button className="shrink-0">Add User</Button>
                         </DialogTrigger>
                         <DialogContent>
                             <DialogHeader>
                                 <DialogTitle>Add New User</DialogTitle>
                             </DialogHeader>
-                            <form onSubmit={handleSubmit} className="space-y-4">
+                            <form onSubmit={handleSubmit} className="space-y-4 pt-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="role">Role</Label>
                                     <Select
                                         value={formData.role}
-                                        onValueChange={(value) =>
+                                        onValueChange={(value: string) =>
                                             setFormData({ ...formData, role: value, department: '' })
                                         }
                                     >
@@ -186,29 +250,30 @@ export default function UsersPage() {
                                         <SelectContent>
                                             <SelectItem value="iamp_coordinator">IAMC Coordinator</SelectItem>
                                             <SelectItem value="feedback_coordinator">Feedback Coordinator</SelectItem>
-                                            <SelectItem value="principal">Principal</SelectItem>
+                                            <SelectItem value="principal">Director</SelectItem>
                                             <SelectItem value="hod">HOD</SelectItem>
                                             <SelectItem value="exam_coordinator">Exam Coordinator</SelectItem>
+                                            <SelectItem value="faculty">Faculty</SelectItem>
                                         </SelectContent>
                                     </Select>
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="name">Name</Label>
+                                    <Label htmlFor="name">Full Name</Label>
                                     <Input
                                         id="name"
                                         value={formData.name}
-                                        onChange={(e) =>
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                                             setFormData({ ...formData, name: e.target.value })
                                         }
                                         required
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <Label htmlFor="phone">Phone</Label>
+                                    <Label htmlFor="phone">Phone / Username</Label>
                                     <Input
                                         id="phone"
                                         value={formData.phone}
-                                        onChange={(e) =>
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                                             setFormData({ ...formData, phone: e.target.value })
                                         }
                                         required
@@ -220,18 +285,18 @@ export default function UsersPage() {
                                         id="password"
                                         type="password"
                                         value={formData.password}
-                                        onChange={(e) =>
+                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
                                             setFormData({ ...formData, password: e.target.value })
                                         }
                                         required
                                     />
                                 </div>
-                                {needsDepartment && (
+                                {needsDepartment(formData.role) && (
                                     <div className="space-y-2">
                                         <Label htmlFor="department">Department</Label>
                                         <Select
                                             value={formData.department}
-                                            onValueChange={(value) =>
+                                            onValueChange={(value: string) =>
                                                 setFormData({ ...formData, department: value })
                                             }
                                         >
@@ -257,52 +322,72 @@ export default function UsersPage() {
                 </div>
             </div>
 
-            <div className="border rounded-lg">
+            <div className="bg-white border rounded-xl overflow-hidden shadow-sm">
                 <Table>
-                    <TableHeader>
+                    <TableHeader className="bg-slate-50">
                         <TableRow>
-                            <TableHead>Name</TableHead>
-                            <TableHead>Phone</TableHead>
-                            <TableHead>Role</TableHead>
-                            <TableHead>Department</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Active</TableHead>
+                            <TableHead className="font-semibold">Name</TableHead>
+                            <TableHead className="font-semibold">Phone / Username</TableHead>
+                            <TableHead className="font-semibold">Role</TableHead>
+                            <TableHead className="font-semibold">Department</TableHead>
+                            <TableHead className="font-semibold">Active</TableHead>
+                            <TableHead className="font-semibold text-right">Actions</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {filteredUsers.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={6} className="text-center text-muted-foreground">
-                                    No users found
+                                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                                    No users found Matching your criteria.
                                 </TableCell>
                             </TableRow>
                         ) : (
                             filteredUsers.map((user) => (
-                                <TableRow key={user._id}>
-                                    <TableCell className="font-medium">{user.name}</TableCell>
-                                    <TableCell>{user.phone}</TableCell>
+                                <TableRow key={user._id} className="hover:bg-slate-50/50">
+                                    <TableCell className="font-medium text-slate-900">{user.name}</TableCell>
+                                    <TableCell className="font-mono text-sm">{user.phone}</TableCell>
                                     <TableCell>
-                                        <Badge variant={roleColors[user.role] || 'default'}>
+                                        <Badge variant={roleColors[user.role] || 'default'} className="font-medium">
                                             {roleLabels[user.role] || user.role}
                                         </Badge>
                                     </TableCell>
                                     <TableCell>
                                         {user.department ? (
-                                            <span>{user.department.name}</span>
+                                            <span className="text-sm font-medium">{user.department.name}</span>
                                         ) : (
-                                            <span className="text-muted-foreground">-</span>
+                                            <span className="text-xs text-muted-foreground">N/A</span>
                                         )}
                                     </TableCell>
                                     <TableCell>
-                                        <Badge variant={user.isActive ? 'default' : 'secondary'}>
-                                            {user.isActive ? 'Active' : 'Inactive'}
-                                        </Badge>
+                                        <div className="flex items-center gap-3">
+                                            <Switch
+                                                checked={user.isActive}
+                                                onCheckedChange={() => toggleStatus(user._id, user.isActive)}
+                                            />
+                                            <Badge variant={user.isActive ? 'default' : 'outline'} className="text-[10px] py-0">
+                                                {user.isActive ? 'ON' : 'OFF'}
+                                            </Badge>
+                                        </div>
                                     </TableCell>
-                                    <TableCell>
-                                        <Switch
-                                            checked={user.isActive}
-                                            onCheckedChange={() => toggleStatus(user._id, user.isActive)}
-                                        />
+                                    <TableCell className="text-right">
+                                        <div className="flex items-center justify-end gap-2">
+                                            <Button 
+                                                variant="ghost" 
+                                                size="icon" 
+                                                className="h-8 w-8 text-slate-500 hover:text-primary"
+                                                onClick={() => openEdit(user)}
+                                            >
+                                                <Edit2 className="h-4 w-4" />
+                                            </Button>
+                                            <Button 
+                                                variant="ghost" 
+                                                size="icon" 
+                                                className="h-8 w-8 text-slate-400 hover:text-red-500 hover:bg-red-50"
+                                                onClick={() => handleDelete(user._id)}
+                                            >
+                                                <Trash2 className="h-4 w-4" />
+                                            </Button>
+                                        </div>
                                     </TableCell>
                                 </TableRow>
                             ))
@@ -310,6 +395,92 @@ export default function UsersPage() {
                     </TableBody>
                 </Table>
             </div>
+
+            {/* Edit User Dialog */}
+            <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Edit User Details</DialogTitle>
+                    </DialogHeader>
+                    {editData && (
+                        <form onSubmit={handleEditSubmit} className="space-y-4 pt-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-role">Role Access</Label>
+                                <Select
+                                    value={editData.role}
+                                    onValueChange={(value: string) =>
+                                        setEditData({ ...editData, role: value, department: '' })
+                                    }
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Select role" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="iamp_coordinator">IAMC Coordinator</SelectItem>
+                                        <SelectItem value="feedback_coordinator">Feedback Coordinator</SelectItem>
+                                        <SelectItem value="principal">Director</SelectItem>
+                                        <SelectItem value="hod">HOD</SelectItem>
+                                        <SelectItem value="exam_coordinator">Exam Coordinator</SelectItem>
+                                        <SelectItem value="faculty">Faculty</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-name">Full Name</Label>
+                                <Input
+                                    id="edit-name"
+                                    value={editData.name}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                        setEditData({ ...editData, name: e.target.value })
+                                    }
+                                    required
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="edit-phone">Phone / Username</Label>
+                                <Input
+                                    id="edit-phone"
+                                    value={editData.phone}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                                        setEditData({ ...editData, phone: e.target.value })
+                                    }
+                                    required
+                                />
+                            </div>
+                            {needsDepartment(editData.role) && (
+                                <div className="space-y-2">
+                                    <Label htmlFor="edit-department">Assigned Department</Label>
+                                    <Select
+                                        value={editData.department}
+                                        onValueChange={(value: string) =>
+                                            setEditData({ ...editData, department: value })
+                                        }
+                                    >
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select department" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {departments.map((dept) => (
+                                                <SelectItem key={dept._id} value={dept._id}>
+                                                    {dept.name} ({dept.shortName})
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                            )}
+                            <div className="flex gap-3 pt-4">
+                                <Button type="button" variant="outline" className="flex-1" onClick={() => setIsEditOpen(false)}>
+                                    Cancel
+                                </Button>
+                                <Button type="submit" className="flex-1">
+                                    Save Changes
+                                </Button>
+                            </div>
+                        </form>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
