@@ -124,10 +124,9 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'Submission window is not active' }, { status: 400 });
         }
 
-        // Get faculty's department via their Teacher record
+        // Get faculty's department via user schema
         const facultyUser = await User.findById(session.user.id);
-        const teacher = await Teacher.findOne({ phone: facultyUser?.phone });
-        if (!teacher?.department) {
+        if (!facultyUser?.department) {
             return NextResponse.json(
                 { error: 'Your teacher profile is not linked to a department. Contact the coordinator.' },
                 { status: 400 }
@@ -144,16 +143,16 @@ export async function POST(request: NextRequest) {
         if (set1File) {
             uploadPromises.push(
                 put(`papers/${sessionId}/${subjectId}/${session.user.id}/set1_${timestamp}.pdf`, set1File, { access: 'private' })
-                .then(b => blob1Url = b.url)
+                    .then(b => blob1Url = b.url)
             );
         }
         if (set2File) {
             uploadPromises.push(
                 put(`papers/${sessionId}/${subjectId}/${session.user.id}/set2_${timestamp}.pdf`, set2File, { access: 'private' })
-                .then(b => blob2Url = b.url)
+                    .then(b => blob2Url = b.url)
             );
         }
-        
+
         await Promise.all(uploadPromises);
 
         let submission;
@@ -178,7 +177,7 @@ export async function POST(request: NextRequest) {
                 session: sessionId,
                 faculty: session.user.id,
                 subject: subjectId,
-                department: teacher.department,
+                department: facultyUser.department,
                 yearAndDiv,
                 set1BlobUrl: blob1Url,
                 set2BlobUrl: blob2Url,
@@ -191,7 +190,7 @@ export async function POST(request: NextRequest) {
         // Notify HODs of this department
         const hodUsers = await User.find({
             role: 'hod',
-            department: teacher.department,
+            department: facultyUser.department,
         });
 
         if (hodUsers.length > 0) {
@@ -211,7 +210,7 @@ export async function POST(request: NextRequest) {
         console.error(error);
         if (error.code === 11000) {
             return NextResponse.json(
-                { error: 'A submission for this subject in this session already exists. Try resubmitting or modifying the original.' }, 
+                { error: 'A submission for this subject in this session already exists. Try resubmitting or modifying the original.' },
                 { status: 409 }
             );
         }
