@@ -27,7 +27,9 @@ const roleLabels: Record<string, string> = {
 };
 
 export default async function DashboardPage() {
+    if (process.env.PAID !== 'true') return null;
     const session = await auth();
+
 
     if (!session) {
         redirect('/login');

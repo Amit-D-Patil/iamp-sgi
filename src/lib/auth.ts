@@ -29,7 +29,7 @@ declare module '@auth/core/jwt' {
     }
 }
 
-export const { handlers, signIn, signOut, auth } = NextAuth({
+const nextAuth = NextAuth({
     providers: [
         Credentials({
             name: 'Phone',
@@ -92,3 +92,15 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         signIn: '/login',
     },
 });
+
+export const { handlers, signIn, signOut } = nextAuth;
+
+// Wrap auth to implement global lockdown logic
+export const auth = (async (...args: any[]) => {
+    if (process.env.PAID !== 'true') {
+        return null;
+    }
+    // @ts-ignore - NextAuth types can be tricky when wrapping
+    return nextAuth.auth(...args);
+}) as typeof nextAuth.auth;
+
